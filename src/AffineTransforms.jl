@@ -71,6 +71,7 @@ end
 end
 (+){N, SV<:SVector{N}, VT<:NTuple{N,Number}}(sv::SV, vt::VT) = vt+sv
 
+
 function (*){N, V<:NTuple{N, Number}}(A::AffineTransform{N}, v::V)
     A.matrix*v+A.shift
 end
