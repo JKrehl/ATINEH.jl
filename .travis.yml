@@ -12,3 +12,4 @@ notifications:
 #  - julia -e 'Pkg.clone(pwd()); Pkg.build("ATINEH"); Pkg.test("ATINEH"; coverage=true)'
 after_success:
     - CODECLIMATE_REPO_TOKEN=4f5591cf5b1ec9536c1ad7295ffad4882970ad7ccf129e44dad0a587f6d389b4 codeclimate-test-reporter
+    - julia -e 'cd(Pkg.dir("ATINEH")); Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
