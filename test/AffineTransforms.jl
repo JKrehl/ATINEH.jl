@@ -29,6 +29,7 @@ end
     @test begin a=ones(3); @inferred(A_mul_B!(a, AffineTransform(SMatrix{3,3}(Diagonal([2.,2.,1.]))), [4,5,6])); a == Float64[8.,10.,6.]; end
     @test @inferred(SMatrix{3,3}(Diagonal([0,2,1])) * (1,2.,3)) == (0.0, 4.0, 3.0)
     @test @inferred(+(SVector{5}([1,2,3,4,5]), (1.,1,1.,1,1.))) == (2.0, 3, 4.0, 5, 6.0)
+    @inferred(AffineTransform(SMatrix{2,2}(Diagonal([2.,2.])))*(1.,1)) == (2.,2.) 
 end
 
 @testset "AffineTransform convenient constructors" begin
