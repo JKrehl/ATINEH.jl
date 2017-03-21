@@ -1,13 +1,11 @@
 using StaticArrays
 using Base.Cartesian
 
-export AffineTransform
+export AffineTransform, axisrotate
 
 import Base: size, eltype, show
 
 import Base: (==), inv, (*), A_mul_B!, (+)
-
-export axisrotate
 
 "type for affine transformation based a NxN SMatrix and a N SVector representing linear and absolute components of the transform"
 struct AffineTransform{N, MT<:SMatrix{N,N}, ST<:SVector{N}}
