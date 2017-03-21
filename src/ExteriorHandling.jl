@@ -10,7 +10,7 @@ struct ConstantExterior{N, T} <: AbstractIndexTransform{N}
 end
 
 @inline function getindex{N, T, I<:NTuple{N,Number}}(A::NAbstractArray{N, T}, itc::IndexTransformChain{N}, ce::ConstantExterior{N}, idx::I)
-    @boundscheck if !checkbounds(Bool, A, map(floor, idx)...); return T(ce.value); end
+    @boundscheck if !checkbounds(Bool, A, map(floor, idx)...); return convert(T, ce.value); end
     @inbounds return getindex(A, itc, idx...)
 end
 
