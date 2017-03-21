@@ -46,7 +46,7 @@ rtail(a) = reverse(tail(reverse(a)))
 
 
 # and the same for addindex!, after it's defined
-addindex!{T,N,V}(A::AbstractArray{T,N}, value::V, i::Vararg{Number, N}) = A[i...] += value
+addindex!{T,N,V}(A::AbstractArray{T,N}, value::V, i::Vararg{Integer, N}) = A[i...] += value
 @inline addindex!{N}(A::NAbstractArray{N}, val, it::AbstractIndexTransform{N}, idx::Vararg{Number,N}) = addindex!(A, val, IndexTransformChain{N}(), it, idx)
 @inline addindex!{N}(A::NAbstractArray{N}, val, itc::IndexTransformChain{N}, it::AbstractIndexTransform{N}, idx::Vararg{Number,N}) = addindex!(A, val, itc, it, idx)
 @inline addindex!{N}(A::NAbstractArray{N}, val, itc::IndexTransformChain{N, Tuple{}}, idx::Vararg{Number,N}) = addindex!(A, val, idx...)
