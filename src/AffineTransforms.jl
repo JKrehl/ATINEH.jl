@@ -1,7 +1,7 @@
 using StaticArrays
 using Base.Cartesian
 
-export AffineTransform, axisrotate
+export AffineTransform, axisrotate, rotate
 
 import Base: size, eltype, show
 
@@ -75,6 +75,12 @@ function (*){N, V<:NTuple{N, Number}}(A::AffineTransform{N}, v::V)
 end
 
 # Convenient Constructors
+
+function rotate(a)
+    ca = cos(a)
+    sa = sin(a)
+    AffineTransform(SMatrix{2,2}([ca -sa; sa ca]))
+end
 
 function axisrotate{T, AT}(x::NTuple{3, T}, a::AT)
     PT = promote_type(T, AT, Float64)

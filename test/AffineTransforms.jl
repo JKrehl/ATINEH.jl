@@ -35,6 +35,7 @@ using StaticArrays
 
     @testset "convenient constructors" begin
         @test @inferred(axisrotate((1,0,0), 0)) == AffineTransform{3}()
-        @test isapprox(@inferred(axisrotate((1,0,0), pi)).matrix, AffineTransform(SMatrix{3,3,Float64}([1,0,0,0,-1,0,0,0,-1])).matrix)
+        @test @inferred(rotate(pi)).matrix ≈ -eye(2)
+        @test @inferred(axisrotate((1,0,0), pi)).matrix ≈ AffineTransform(SMatrix{3,3,Float64}([1,0,0,0,-1,0,0,0,-1])).matrix
     end
 end
