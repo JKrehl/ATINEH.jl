@@ -2,15 +2,15 @@ using Base.Test
 
 @testset "IndexTransform" begin
    @testset "constructors" begin
-        @test isa(@inferred(IndexIdentity{3}()), AbstractIndexTransform)
+        @test @inferred(IndexIdentity{3}()) isa AbstractIndexTransform
         @test @inferred(IndexTransformChain{3}()) == IndexTransformChain{3}(())
-        @test isa(@inferred(IndexTransformChain((IndexIdentity{4}(),))), IndexTransformChain{4})
+        @test @inferred(IndexTransformChain((IndexIdentity{4}(),))) isa IndexTransformChain{4}
     end
 
     @testset "chaining" begin
-        @test isa(@inferred(IndexIdentity{3}() ∘ IndexIdentity{3}()), IndexTransformChain{3,Tuple{IndexIdentity{3},IndexIdentity{3}}})
-        @test isa(@inferred(IndexTransformChain{3}() ∘ IndexIdentity{3}()), IndexTransformChain{3,Tuple{IndexIdentity{3}}})
-        @test isa(@inferred(IndexIdentity{3}() ∘ IndexTransformChain{3}((IndexIdentity{3}(),))), IndexTransformChain{3,Tuple{IndexIdentity{3},IndexIdentity{3}}})
+        @test @inferred(IndexIdentity{3}() ∘ IndexIdentity{3}()) isa IndexTransformChain{3,Tuple{IndexIdentity{3},IndexIdentity{3}}}
+        @test @inferred(IndexTransformChain{3}() ∘ IndexIdentity{3}()) isa IndexTransformChain{3,Tuple{IndexIdentity{3}}}
+        @test @inferred(IndexIdentity{3}() ∘ IndexTransformChain{3}((IndexIdentity{3}(),))) isa IndexTransformChain{3,Tuple{IndexIdentity{3},IndexIdentity{3}}}
         @test @inferred(IndexTransformChain{1}((IndexIdentity{1}(),)) ∘ IndexTransformChain{1}((IndexIdentity{1}(),))).transforms == (IndexIdentity{1}(), IndexIdentity{1}())
     end
 
