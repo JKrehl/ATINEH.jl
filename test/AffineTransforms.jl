@@ -31,6 +31,7 @@ using StaticArrays
         @test @inferred(SMatrix{3,3}(Diagonal([0,2,1])) * (1,2.,3)) == (0.0, 4.0, 3.0)
         @test @inferred(+(SVector{5}([1,2,3,4,5]), (1.,1,1.,1,1.))) == (2.0, 3, 4.0, 5, 6.0)
         @test @inferred(AffineTransform(SMatrix{2,2}(Diagonal([2.,2.])))*(1.,1)) == (2.,2.)
+        @test let A = AffineTransform(Val{3},rand((3,3)), rand(3)); all(A*[1,2,3] .== A*(1,2,3)) end
     end
 
     @testset "convenient constructors" begin

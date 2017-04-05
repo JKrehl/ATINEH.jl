@@ -61,7 +61,7 @@ end
 
 #TODO deprecate if StaticArrays defines corresponding method
 @generated function (*){N, SM<:SMatrix{N,N}, VT<:NTuple{N,Number}}(sm::SM, vt::VT)
-    :(@ntuple $N i -> $(Expr(:call, :+, (:(sm[$j,i] * vt[$j]) for j in 1:N)...)))
+    :(@ntuple $N i -> $(Expr(:call, :+, (:(sm[i,$j] * vt[$j]) for j in 1:N)...)))
 end
 
 @generated function (+){N, SV<:SVector{N}, VT<:NTuple{N,Number}}(vt::VT, sv::SV)
