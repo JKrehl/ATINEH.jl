@@ -1,7 +1,7 @@
 using StaticArrays
 using Base.Cartesian
 
-export AffineTransform, axisrotate, rotate
+export AffineTransform, axisrotate, rotate, scale, unscale
 
 import Base: size, eltype, show
 
@@ -90,4 +90,12 @@ function axisrotate{T, AT}(x::NTuple{3, T}, a::AT)
     matrix  = SMatrix{3,3}(PT[(i==j ? 1+ca*(-x[i%3+1]^2-x[(i+1)%3+1]^2) : x[i]*x[j])+sa*(i!=j ? -1^((i>j)+i-j)*x[(5-i-j)%3+1] : 0) for i in 1:3, j in 1:3])
 
     AffineTransform(matrix)
+end
+
+function scale{N}(s::Vararg{Range, N})
+    AffineTransform(SMatrix{N,N}(diagm(map(step, [s...]))), SVector{N}(map(is -> first(is)-step(is), [s...])))
+end
+
+function unscale{N}(s::Vararg{Range, N})
+    AffineTransform(SMatrix{N,N}(diagm(map(inv ∘ step, [s...]))), SVector{N}(map(is -> -first(is)/step(is)+1, [s...])))
 end
