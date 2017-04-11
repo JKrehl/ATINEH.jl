@@ -5,7 +5,9 @@ using Base.Test
     include("AffineTransforms.jl")
     include("IndexTransforms.jl")
     include("ExteriorHandling.jl")
-    include("Interpolation.jl")
+    @testset "Interpolations" begin
+        include("Interpolations/LinearInterpolation.jl")
+    end
     include("IndexAffineTransform.jl")
     include("IndexSupports.jl")
 end

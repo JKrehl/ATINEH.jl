@@ -1,7 +1,8 @@
 using StaticArrays
 using Base.Cartesian
 
-export AffineTransform, axisrotate, rotate, scale, unscale
+
+export AffineTransform, rotate, axisrotate, scale, unscale
 
 import Base: size, eltype, show
 
