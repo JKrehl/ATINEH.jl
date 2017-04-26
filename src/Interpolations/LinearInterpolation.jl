@@ -1,12 +1,12 @@
 import Base: getindex, setindex!
-import ATINEH:NAbstractArray, addindex!
+import ATINEH:addindex!
 
 export LinearInterpolation
 
 struct LinearInterpolation{N} <: AbstractIndexTransform{N}
 end
 
-@generated function getindex{N, IT<:NTuple{N,Number}}(A::NAbstractArray{N}, imc::IndexTransformChain{N}, ::LinearInterpolation{N}, I::IT)
+@generated function getindex{N, IT<:NTuple{N,Number}}(A::AbstractArray{T,N} where T, imc::IndexTransformChain{N}, ::LinearInterpolation{N}, I::IT)
     xs = ((Symbol("x_",i) for i in 1:N)...)
     ex = :(getindex(A, imc, $(xs...)))
     preexs = Expr[]
@@ -35,11 +35,11 @@ end
     end
 end
 
-@generated function setindex!{N, IT<:NTuple{N,Number}}(A::NAbstractArray{N}, val, imc::IndexTransformChain{N}, ::LinearInterpolation{N}, I::IT)
+@generated function setindex!{N, IT<:NTuple{N,Number}}(A::AbstractArray{T,N} where T, val, imc::IndexTransformChain{N}, ::LinearInterpolation{N}, I::IT)
     throw(ArgumentError("setindex! is ill defined for linear interpolation"))
 end
 
-@generated function addindex!{N, IT<:NTuple{N,Number}}(A::NAbstractArray{N}, val, imc::IndexTransformChain{N}, ::LinearInterpolation{N}, I::IT)
+@generated function addindex!{N, IT<:NTuple{N,Number}}(A::AbstractArray{T,N} where T, val, imc::IndexTransformChain{N}, ::LinearInterpolation{N}, I::IT)
     xs = ((Symbol("x_",i) for i in 1:N)...)
     ex = :(addindex!(A, val, imc, $(xs...)))
     preexs = Expr[]

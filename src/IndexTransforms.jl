@@ -2,8 +2,6 @@ import Base: convert, (∘), getindex, setindex!, first, tail
 
 export AbstractIndexTransform, IndexTransformChain, IndexIdentity, addindex!
 
-NAbstractArray{N,T} = AbstractArray{T,N}
-
 abstract type AbstractIndexTransform{N} end
 
 "container for multiple, or one, or none index transforms"
@@ -26,38 +24,38 @@ rtail(a) = reverse(tail(reverse(a)))
 
 
 # to pack indices from vararg into tuple, so tuple of types can be resolved
-@inline getindex{N}(A::NAbstractArray{N}, it::AbstractIndexTransform{N}, idx::Vararg{Number,N}) = getindex(A, IndexTransformChain{N}(), it, idx)
-@inline getindex{N}(A::NAbstractArray{N}, itc::IndexTransformChain{N}, it::AbstractIndexTransform{N}, idx::Vararg{Number,N}) = getindex(A, itc, it, idx)
+@inline getindex{N}(A::AbstractArray{T,N} where T, it::AbstractIndexTransform{N}, idx::Vararg{Number,N}) = getindex(A, IndexTransformChain{N}(), it, idx)
+@inline getindex{N}(A::AbstractArray{T,N} where T, itc::IndexTransformChain{N}, it::AbstractIndexTransform{N}, idx::Vararg{Number,N}) = getindex(A, itc, it, idx)
 
 # dispatch elements of the chain onto the indices
-@inline getindex{N}(A::NAbstractArray{N}, itc::IndexTransformChain{N, Tuple{}}, idx::Vararg{Number,N}) = getindex(A, idx...)
-@inline getindex{N}(A::NAbstractArray{N}, itc::IndexTransformChain{N}, idx::Vararg{Number,N}) = getindex(A, IndexTransformChain{N}(rtail(itc.transforms)), rhead(itc.transforms), idx...)
+@inline getindex{N}(A::AbstractArray{T,N} where T, itc::IndexTransformChain{N, Tuple{}}, idx::Vararg{Number,N}) = getindex(A, idx...)
+@inline getindex{N}(A::AbstractArray{T,N} where T, itc::IndexTransformChain{N}, idx::Vararg{Number,N}) = getindex(A, IndexTransformChain{N}(rtail(itc.transforms)), rhead(itc.transforms), idx...)
 
 # accumulate index transforms into chain till only one index transform in front of the indices remains
-@inline getindex{N}(A::NAbstractArray{N}, it1::Union{AbstractIndexTransform{N}, IndexTransformChain{N}}, it2::Union{AbstractIndexTransform{N}, IndexTransformChain{N}}, x...) = getindex(A, it1 ∘ it2, x...)
+@inline getindex{N}(A::AbstractArray{T,N} where T, it1::Union{AbstractIndexTransform{N}, IndexTransformChain{N}}, it2::Union{AbstractIndexTransform{N}, IndexTransformChain{N}}, x...) = getindex(A, it1 ∘ it2, x...)
 
 
 # same for setindex!
-@inline setindex!{N}(A::NAbstractArray{N}, val, it::AbstractIndexTransform{N}, idx::Vararg{Number,N}) = setindex!(A, val, IndexTransformChain{N}(), it, idx)
-@inline setindex!{N}(A::NAbstractArray{N}, val, itc::IndexTransformChain{N}, it::AbstractIndexTransform{N}, idx::Vararg{Number,N}) = setindex!(A, val, itc, it, idx)
-@inline setindex!{N}(A::NAbstractArray{N}, val, itc::IndexTransformChain{N, Tuple{}}, idx::Vararg{Number,N}) = setindex!(A, val, idx...)
-@inline setindex!{N}(A::NAbstractArray{N}, val, itc::IndexTransformChain{N}, idx::Vararg{Number,N}) = setindex!(A, val, IndexTransformChain{N}(rtail(itc.transforms)), rhead(itc.transforms), idx...)
-@inline setindex!{N}(A::NAbstractArray{N}, val, it1::Union{AbstractIndexTransform{N}, IndexTransformChain{N}}, it2::Union{AbstractIndexTransform{N}, IndexTransformChain{N}}, x...) = setindex!(A, val, it1 ∘ it2, x...)
+@inline setindex!{N}(A::AbstractArray{T,N} where T, val, it::AbstractIndexTransform{N}, idx::Vararg{Number,N}) = setindex!(A, val, IndexTransformChain{N}(), it, idx)
+@inline setindex!{N}(A::AbstractArray{T,N} where T, val, itc::IndexTransformChain{N}, it::AbstractIndexTransform{N}, idx::Vararg{Number,N}) = setindex!(A, val, itc, it, idx)
+@inline setindex!{N}(A::AbstractArray{T,N} where T, val, itc::IndexTransformChain{N, Tuple{}}, idx::Vararg{Number,N}) = setindex!(A, val, idx...)
+@inline setindex!{N}(A::AbstractArray{T,N} where T, val, itc::IndexTransformChain{N}, idx::Vararg{Number,N}) = setindex!(A, val, IndexTransformChain{N}(rtail(itc.transforms)), rhead(itc.transforms), idx...)
+@inline setindex!{N}(A::AbstractArray{T,N} where T, val, it1::Union{AbstractIndexTransform{N}, IndexTransformChain{N}}, it2::Union{AbstractIndexTransform{N}, IndexTransformChain{N}}, x...) = setindex!(A, val, it1 ∘ it2, x...)
 
 
 # and the same for addindex!, after it's defined
 addindex!{T,N,V}(A::AbstractArray{T,N}, value::V, i::Vararg{Integer, N}) = A[i...] += value
-@inline addindex!{N}(A::NAbstractArray{N}, val, it::AbstractIndexTransform{N}, idx::Vararg{Number,N}) = addindex!(A, val, IndexTransformChain{N}(), it, idx)
-@inline addindex!{N}(A::NAbstractArray{N}, val, itc::IndexTransformChain{N}, it::AbstractIndexTransform{N}, idx::Vararg{Number,N}) = addindex!(A, val, itc, it, idx)
-@inline addindex!{N}(A::NAbstractArray{N}, val, itc::IndexTransformChain{N, Tuple{}}, idx::Vararg{Number,N}) = addindex!(A, val, idx...)
-@inline addindex!{N}(A::NAbstractArray{N}, val, itc::IndexTransformChain{N}, idx::Vararg{Number,N}) = addindex!(A, val, IndexTransformChain{N}(rtail(itc.transforms)), rhead(itc.transforms), idx...)
-@inline addindex!{N}(A::NAbstractArray{N}, val, it1::Union{AbstractIndexTransform{N}, IndexTransformChain{N}}, it2::Union{AbstractIndexTransform{N}, IndexTransformChain{N}}, x...) = addindex!(A, val, it1 ∘ it2, x...)
+@inline addindex!{N}(A::AbstractArray{T,N} where T, val, it::AbstractIndexTransform{N}, idx::Vararg{Number,N}) = addindex!(A, val, IndexTransformChain{N}(), it, idx)
+@inline addindex!{N}(A::AbstractArray{T,N} where T, val, itc::IndexTransformChain{N}, it::AbstractIndexTransform{N}, idx::Vararg{Number,N}) = addindex!(A, val, itc, it, idx)
+@inline addindex!{N}(A::AbstractArray{T,N} where T, val, itc::IndexTransformChain{N, Tuple{}}, idx::Vararg{Number,N}) = addindex!(A, val, idx...)
+@inline addindex!{N}(A::AbstractArray{T,N} where T, val, itc::IndexTransformChain{N}, idx::Vararg{Number,N}) = addindex!(A, val, IndexTransformChain{N}(rtail(itc.transforms)), rhead(itc.transforms), idx...)
+@inline addindex!{N}(A::AbstractArray{T,N} where T, val, it1::Union{AbstractIndexTransform{N}, IndexTransformChain{N}}, it2::Union{AbstractIndexTransform{N}, IndexTransformChain{N}}, x...) = addindex!(A, val, it1 ∘ it2, x...)
 
 
 "index transform with no effect"
 struct IndexIdentity{N} <: AbstractIndexTransform{N}
 end
 
-@inline getindex{N, I<:NTuple{N,Number}}(A::NAbstractArray{N}, itc::IndexTransformChain{N}, ::IndexIdentity{N}, idx::I) = getindex(A, itc, idx...)
-@inline setindex!{N, I<:NTuple{N,Number}}(A::NAbstractArray{N}, val, itc::IndexTransformChain{N}, ::IndexIdentity{N}, idx::I) = setindex!(A, val, itc, idx...)
-@inline addindex!{N, I<:NTuple{N,Number}}(A::NAbstractArray{N}, val, itc::IndexTransformChain{N}, ::IndexIdentity{N}, idx::I) = addindex!(A, val, itc, idx...)
+@inline getindex{N, I<:NTuple{N,Number}}(A::AbstractArray{T,N} where T, itc::IndexTransformChain{N}, ::IndexIdentity{N}, idx::I) = getindex(A, itc, idx...)
+@inline setindex!{N, I<:NTuple{N,Number}}(A::AbstractArray{T,N} where T, val, itc::IndexTransformChain{N}, ::IndexIdentity{N}, idx::I) = setindex!(A, val, itc, idx...)
+@inline addindex!{N, I<:NTuple{N,Number}}(A::AbstractArray{T,N} where T, val, itc::IndexTransformChain{N}, ::IndexIdentity{N}, idx::I) = addindex!(A, val, itc, idx...)
