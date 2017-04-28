@@ -1,5 +1,5 @@
 using Base.Cartesian
-import Base: size, getindex, (*), (+), convert
+import Base: size, getindex, (*), (+), convert, first, tail, start, next, done, eltype, length
 
 export IndexSupportPoint, IndexReturningArray, FlatIndexSupportPoint, FlatIndexReturningArray
 
@@ -27,7 +27,7 @@ IndexReturningArray(_size::Vararg{<:Integer}) = IndexReturningArray(Float64, _si
 size(iar::IndexReturningArray) = iar._size
 size(iar::IndexReturningArray, i::Int) = iar._size[i]
 
-@inline getindex{N,V,I}(iar::IndexReturningArray{N,V,I}, idx::Vararg{Int, N}) = (IndexSupportPoint(one(V), idx),)
+@inline getindex{N,V,I}(iar::IndexReturningArray{N,V,I}, idx::Vararg{Int, N}) = IndexSupportPoints((IndexSupportPoint(one(V), idx),))
 
 struct FlatIndexSupportPoint{V,I<:Number}
     val::V
