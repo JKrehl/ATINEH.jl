@@ -35,7 +35,7 @@ end
     end
 end
 
-@generated function setindex!{N, IT<:NTuple{N,Number}}(A::AbstractArray{T,N} where T, val, imc::IndexTransformChain{N}, ::LinearInterpolation{N}, I::IT)
+@generated function setindex!{N}(A::AbstractArray{T,N} where T, val, imc::IndexTransformChain{N}, ::LinearInterpolation{N}, I::IT where {IT<:NTuple{N,Number}})
     throw(ArgumentError("setindex! is ill defined for linear interpolation"))
 end
 
