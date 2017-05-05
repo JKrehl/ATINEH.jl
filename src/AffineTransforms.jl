@@ -92,7 +92,9 @@ function axisrotate{T, AT}(x::NTuple{3, T}, a::AT)
     AffineTransform(matrix)
 end
 
-translate{N}(s::S where S<:Union{SVector{N}, NTuple{N, Real}}) = AffineTransform{N}(eye(SMatrix{N,N}), SVector{N}(s))
+@inline translate{N, T<:Real}(s::S where S<:SVector{N, T}) = AffineTransform{N}(eye(SMatrix{N,N, T}), SVector{N}(s))
+@inline translate{N, T<:Real}(s::NTuple{N, T}) = AffineTransform{N}(eye(SMatrix{N,N, T}), SVector{N}(s))
+@inline translate{N, T<:NTuple{N, Real}}(s::T) = translate(promote(s...))
 
 function scale{N}(s::Vararg{Range, N})
     AffineTransform(SMatrix{N,N}(diagm(map(step, [s...]))), SVector{N}(map(is -> first(is)-step(is), [s...])))
