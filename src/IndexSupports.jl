@@ -44,6 +44,7 @@ SupportReturningArray{N, V}(::Type{FlatIndexSupport}, ::Type{V}, _size::NTuple{N
 SupportReturningArray{N}(::Type{FlatIndexSupport}, _size::NTuple{N,<:Integer}) = SupportReturningArray(FlatIndexSupport{N,Float64,Int}, _size)
 
 SupportReturningArray{T}(::Type{T}, x...) = SupportReturningArray(T, x)
+SupportReturningArray{T,V}(::Type{T}, ::Type{V}, x...) = SupportReturningArray(T, V, x)
 
 @inline getindex{N,V,I,IS<:IndexSupport{N,V,I}}(iar::SupportReturningArray{N,IS}, idx::Vararg{<:Integer, N}) = IS(one(V), I(idx))
 @inline getindex{N,V,I,IS<:FlatIndexSupport{N,V,I}}(iar::SupportReturningArray{N,IS}, idx::Vararg{<:Integer, N}) = IS(one(V), I(sub2ind(iar._size, idx...)))

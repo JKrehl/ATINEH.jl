@@ -3,12 +3,13 @@ import ATINEH:addindex!
 
 export LinearInterpolation
 
-struct LinearInterpolation{N} <: AbstractIndexTransform{N}
+struct LinearInterpolation <: AbstractIndexMap
 end
 
-@generated function getindex{N, IT<:NTuple{N,Number}}(A::AbstractArray{T,N} where T, imc::IndexTransformChain{N}, ::LinearInterpolation{N}, I::IT)
+@inline getindex(A::AbstractArray, li::LinearInterpolation, I::Vararg{Number}) = getindex(A, li, I)
+@generated function getindex{N, IT<:NTuple{N, Number}}(A::AbstractArray, ::LinearInterpolation, I::IT)
     xs = ((Symbol("x_",i) for i in 1:N)...)
-    ex = :(getindex(A, imc, $(xs...)))
+    ex = :(getindex(A, $(xs...)))
     preexs = Expr[]
 
     for i in 1:N
@@ -35,13 +36,15 @@ end
     end
 end
 
-@generated function setindex!{N}(A::AbstractArray{T,N} where T, val, imc::IndexTransformChain{N}, ::LinearInterpolation{N}, I::IT where {IT<:NTuple{N,Number}})
+
+@generated function setindex!{N}(A::AbstractArray, val, ::LinearInterpolation, I::Vararg{Number,N})
     throw(ArgumentError("setindex! is ill defined for linear interpolation"))
 end
 
-@generated function addindex!{N, IT<:NTuple{N,Number}}(A::AbstractArray{T,N} where T, val, imc::IndexTransformChain{N}, ::LinearInterpolation{N}, I::IT)
+@inline addindex!(A::AbstractArray, val, li::LinearInterpolation, I::Vararg{Number}) = addindex!(A, val, li, I)
+@generated function addindex!{N, IT<:NTuple{N, Number}}(A::AbstractArray, val, ::LinearInterpolation, I::IT)
     xs = ((Symbol("x_",i) for i in 1:N)...)
-    ex = :(addindex!(A, val, imc, $(xs...)))
+    ex = :(addindex!(A, val, $(xs...)))
     preexs = Expr[]
 
     for i in 1:N

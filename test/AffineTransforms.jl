@@ -39,6 +39,7 @@ using StaticArrays
         @test @inferred(rotate(pi)).matrix ≈ -eye(2)
         @test @inferred(axisrotate((1,0,0), pi)).matrix ≈ AffineTransform(SMatrix{3,3,Float64}([1,0,0,0,-1,0,0,0,-1])).matrix
         @test @inferred(translate((1.,2))).shift == [1.,2.]
+        @test @inferred(translate(SVector((3,4)))).shift == [3,4]
         @test @inferred(scale(1:2, 3:4)) == AffineTransform{2}([1 0; 0 1], [0,2])
         @test @inferred(unscale(1:2, 3:4)) == AffineTransform{2}([1 0; 0 1], [0,-2])
     end

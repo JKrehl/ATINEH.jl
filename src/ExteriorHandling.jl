@@ -2,23 +2,23 @@ import Base: getindex, setindex!
 
 export ConstantExterior
 
-struct ConstantExterior{N, T} <: AbstractIndexTransform{N}
+struct ConstantExterior{T} <: AbstractIndexMap
     value::T
-    ConstantExterior{N}(value::T=0) where {N,T} = new{N,T}(value)
-    ConstantExterior{N, T}() where {N,T} = new{N,T}(zero(T))
+    ConstantExterior(value::T=0) where {T} = new{T}(value)
+    ConstantExterior{T}() where {T} = new{T}(zero(T))
 end
 
-@inline function getindex{N, T, I<:NTuple{N,Number}}(A::AbstractArray{T, N}, itc::IndexTransformChain{N}, ce::ConstantExterior{N}, idx::I)
+@inline function getindex{T}(A::AbstractArray{T}, ce::ConstantExterior, idx::Vararg{<:Number})
     @boundscheck if !checkbounds(Bool, A, map(floor, idx)...); return T(ce.value); end
-    @inbounds return getindex(A, itc, idx...)
+    @inbounds return getindex(A, idx...)
 end
 
-@inline function setindex!{N, I<:NTuple{N,Number}}(A::AbstractArray{T,N} where T, val, itc::IndexTransformChain{N}, ce::ConstantExterior{N}, idx::I)
+@inline function setindex!{T}(A::AbstractArray{T}, val, ce::ConstantExterior, idx::Vararg{<:Number})
     @boundscheck if !checkbounds(Bool, A, map(floor, idx)...); return end
-    @inbounds setindex!(A, val, itc, idx...)
+    @inbounds setindex!(A, val, idx...)
 end
 
-@inline function addindex!{N, I<:NTuple{N,Number}}(A::AbstractArray{T,N} where T, val, itc::IndexTransformChain{N}, ce::ConstantExterior{N}, idx::I)
+@inline function addindex!{T}(A::AbstractArray{T}, val, ce::ConstantExterior, idx::Vararg{<:Number})
     @boundscheck if !checkbounds(Bool, A, map(floor, idx)...); return end
-    @inbounds addindex!(A, val, itc, idx...)
+    @inbounds addindex!(A, val, idx...)
 end
