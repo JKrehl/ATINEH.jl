@@ -3,20 +3,18 @@ import ATINEH: addindex!
 
 export IndexAffineTransform
 
-struct IndexAffineTransform{N, AT<:AffineTransform{N}} <: AbstractIndexTransform{N}
+struct IndexAffineTransform{AT<:AffineTransform} <: AbstractIndexMap
     at::AT
-    IndexAffineTransform(at::AT) where {N, AT<:AffineTransform{N}} = new{N,AT}(at)
-    IndexAffineTransform{N}(at::AT) where {N, AT<:AffineTransform{N}} = new{N,AT}(at)
 end
 
-@inline function getindex{N, T, I<:NTuple{N,Number}}(A::AbstractArray{T, N}, itc::IndexTransformChain{N}, iat::IndexAffineTransform{N}, idx::I)
-    getindex(A, itc, (iat.at*idx)...)
+@inline function getindex(A::AbstractArray, iat::IndexAffineTransform, idx::Vararg{<:Number})
+    getindex(A, (iat.at*idx)...)
 end
 
-@inline function setindex!{N, T, I<:NTuple{N,Number}}(A::AbstractArray{T, N}, val, itc::IndexTransformChain{N}, iat::IndexAffineTransform{N}, idx::I)
-    setindex!(A, val, itc, (iat.at*idx)...)
+@inline function setindex!(A::AbstractArray, val, iat::IndexAffineTransform, idx::Vararg{<:Number})
+    setindex!(A, val, (iat.at*idx)...)
 end
 
-@inline function addindex!{N, T, I<:NTuple{N,Number}}(A::AbstractArray{T, N}, val, itc::IndexTransformChain{N}, iat::IndexAffineTransform{N}, idx::I)
-    addindex!(A, val, itc, (iat.at*idx)...)
+@inline function addindex!(A::AbstractArray, val, iat::IndexAffineTransform, idx::Vararg{<:Number})
+    addindex!(A, val, (iat.at*idx)...)
 end
