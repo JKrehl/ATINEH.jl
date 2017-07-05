@@ -11,10 +11,11 @@ addindex!(A::AbstractArray, value, i::Vararg{Number}) = A[i...] += value
 abstract type AbstractIndexMap end
 
 "an array annotated with an index map"
-struct IndexMappedArray{T, N, A<:AbstractArray{T,N}, I<:AbstractIndexMap} <: AbstractArray{T,N}
+struct IndexMappedArray{T, N, A<:AbstractArray, I<:AbstractIndexMap} <: AbstractArray{T,N}
     a::A
     i::I
     IndexMappedArray(a::A, i::I) where {T, N, A<:AbstractArray{T,N}, I<:AbstractIndexMap} = new{T,N,A,I}(a,i)
+    IndexMappedArray{T, N}(a::A, i::I) where {T, N, A<:AbstractArray, I<:AbstractIndexMap} = new{T,N,A,I}(a,i)
 end
 
 @inline getindex(A::AbstractArray, m::AbstractIndexMap, x...) = getindex(IndexMappedArray(A, m), x...)
