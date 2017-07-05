@@ -47,30 +47,30 @@ function inv(A::AffineTransform)
     AffineTransform(matrix, -matrix*A.shift)
 end
 
-function (*){N}(A::AffineTransform{N}, B::AffineTransform{N})
+@inline function (*){N}(A::AffineTransform{N}, B::AffineTransform{N})
     AffineTransform{N}(A.matrix*B.matrix, A.shift+A.matrix*B.shift)
 end
 
-function (*)(A::AffineTransform, v::AbstractVector)
+@inline function (*)(A::AffineTransform, v::AbstractVector)
     A.matrix*v.+A.shift
 end
 
-function A_mul_B!(u::AbstractVector, A::AffineTransform, v::AbstractVector)
+@inline function A_mul_B!(u::AbstractVector, A::AffineTransform, v::AbstractVector)
     u .= A*v
 end
 
 #TODO deprecate if StaticArrays defines corresponding method
 @generated function (*){N, SM<:SMatrix{N,N}, VT<:NTuple{N, Any}}(sm::SM, vt::VT)
-    :(@ntuple $N i -> $(Expr(:call, :+, (:(sm[i,$j] * vt[$j]) for j in 1:N)...)))
+    :($(Expr(:meta, :inline)); @ntuple $N i -> $(Expr(:call, :+, (:(sm[i,$j] * vt[$j]) for j in 1:N)...)))
 end
 
 @generated function (+){N, SV<:SVector{N}, VT<:NTuple{N, Any}}(vt::VT, sv::SV)
-    :(@ntuple $N i->sv[i]+vt[i])
+    :($(Expr(:meta, :inline)); @ntuple $N i->sv[i]+vt[i])
 end
 (+){N}(sv::SV where SV<:SVector{N}, vt::VT where VT<:NTuple{N, Any}) = vt+sv
 
 
-function (*){N, V<:NTuple{N, Any}}(A::AffineTransform{N}, v::V)
+@inline function (*){N, V<:NTuple{N, Any}}(A::AffineTransform{N}, v::V)
     A.matrix*v+A.shift
 end
 
