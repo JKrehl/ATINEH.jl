@@ -1,10 +1,6 @@
 using Base.Test
 
 @testset "IndexTransform" begin
-    @testset "init" begin
-        @test ATINEH.init((1,2,3)) == (1,2)
-    end
-
    @testset "IndexIdentity" begin
         @test @inferred(IndexIdentity()) isa AbstractIndexMap
     end

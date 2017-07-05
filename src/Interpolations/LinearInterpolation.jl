@@ -6,10 +6,10 @@ export LinearInterpolation
 struct LinearInterpolation <: AbstractIndexMap
 end
 
-@inline getindex(A::AbstractArray, li::LinearInterpolation, I::Vararg{Number}) = getindex(A, li, I)
-@generated function getindex{N, IT<:NTuple{N, Number}}(A::AbstractArray, ::LinearInterpolation, I::IT)
+@inline getindex(A::MappedArray_byMap{<:LinearInterpolation}, I::Vararg{Number}) = getindex(A, I)
+@generated function getindex{N, IT<:NTuple{N, Number}}(A::MappedArray_byMap{<:LinearInterpolation}, I::IT)
     xs = ((Symbol("x_",i) for i in 1:N)...)
-    ex = :(getindex(A, $(xs...)))
+    ex = :(getindex(A.a, $(xs...)))
     preexs = Expr[]
 
     for i in 1:N
@@ -37,14 +37,14 @@ end
 end
 
 
-@generated function setindex!{N}(A::AbstractArray, val, ::LinearInterpolation, I::Vararg{Number,N})
+@generated function setindex!{N}(A::MappedArray_byMap{<:LinearInterpolation}, val, I::Vararg{Number,N})
     throw(ArgumentError("setindex! is ill defined for linear interpolation"))
 end
 
-@inline addindex!(A::AbstractArray, val, li::LinearInterpolation, I::Vararg{Number}) = addindex!(A, val, li, I)
-@generated function addindex!{N, IT<:NTuple{N, Number}}(A::AbstractArray, val, ::LinearInterpolation, I::IT)
+@inline addindex!(A::MappedArray_byMap{<:LinearInterpolation}, val, I::Vararg{Number}) = addindex!(A, val, I)
+@generated function addindex!{N, IT<:NTuple{N, Number}}(A::MappedArray_byMap{<:LinearInterpolation}, val, I::IT)
     xs = ((Symbol("x_",i) for i in 1:N)...)
-    ex = :(addindex!(A, val, $(xs...)))
+    ex = :(addindex!(A.a, val, $(xs...)))
     preexs = Expr[]
 
     for i in 1:N
