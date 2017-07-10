@@ -1,6 +1,6 @@
 import Base: getindex, setindex!
 
-export ConstantExterior
+export ConstantExterior, InBounds
 
 
 "conversion for numerical element types with special rule for Tuple{...} types"
@@ -17,16 +17,36 @@ struct ConstantExterior{T} <: AbstractIndexMap
 end
 
 @inline function getindex{T}(A::MappedArray{T, N, A, <:ConstantExterior} where {N,A}, idx::Vararg{<:Number})
-    @boundscheck if !checkbounds(Bool, A, map(floor, idx)...); return T(A.m.value); end
-    @inbounds return getindex(A.a, idx...)
+    if checkbounds(Bool, A, map(floor, idx)...)
+        @inbounds re = getindex(A.a, idx...)
+        re
+    else
+        T(A.m.value)
+    end
 end
 
 @inline function setindex!{T}(A::MappedArray{T, N, A, <:ConstantExterior} where {N,A}, val, idx::Vararg{<:Number})
-    @boundscheck if !checkbounds(Bool, A, map(floor, idx)...); return end
-    @inbounds setindex!(A.a, val, idx...)
+    if checkbounds(Bool, A, map(floor, idx)...)
+        @inbounds setindex!(A.a, val, idx...)
+    end
 end
 
 @inline function addindex!{T}(A::MappedArray{T, N, A, <:ConstantExterior} where {N,A}, val, idx::Vararg{<:Number})
-    @boundscheck if !checkbounds(Bool, A, map(floor, idx)...); return end
+    if checkbounds(Bool, A, map(floor, idx)...)
+        @inbounds addindex!(A.a, val, idx...)
+    end
+end
+
+struct InBounds <: AbstractIndexMap end
+
+@inline function getindex{T}(A::MappedArray{T, N, A, <:InBounds} where {N,A}, idx::Vararg{<:Number})
+    @inbounds getindex(A.a, idx...)
+end
+
+@inline function setindex!{T}(A::MappedArray{T, N, A, <:InBounds} where {N,A}, val, idx::Vararg{<:Number})
+    @inbounds setindex!(A.a, val, idx...)
+end
+
+@inline function addindex!{T}(A::MappedArray{T, N, A, <:InBounds} where {N,A}, val, idx::Vararg{<:Number})
     @inbounds addindex!(A.a, val, idx...)
 end

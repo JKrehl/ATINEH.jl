@@ -5,7 +5,7 @@ export AbstractIndexMap, MappedArray, MappedArray_byMap, IndexMapChain, IndexIde
 
 IndexTypes = Union{Number, Tuple, AffineTransform}
 
-addindex!(A::AbstractArray, value, i...) = A[i...] += value
+@inline addindex!(A::AbstractArray, value, i...) = begin @boundscheck checkbounds(A, i...); @inbounds A[i...] += value end
 
 "abstract index map"
 abstract type AbstractIndexMap end
@@ -71,10 +71,10 @@ PermuteIndices(P::Vararg{Int}) = PermuteIndices{P}()
     :($(Expr(:meta, :inline)); getindex(A.a, $([:(x[$i]) for i in P]...)))
 end
 
-@inline @generated function setindex!{P}(A::MappedArray_byMap{PermuteIndices{P}}, x::Vararg{<:IndexTypes})
-    :($(Expr(:meta, :inline)); getindex(A.a, val, $([:(x[$i]) for i in P]...)))
+@inline @generated function setindex!{P}(A::MappedArray_byMap{PermuteIndices{P}}, val, x::Vararg{<:IndexTypes})
+    :($(Expr(:meta, :inline)); setindex!(A.a, val, $([:(x[$i]) for i in P]...)))
 end
 
-@inline @generated function addindex!{P}(A::MappedArray_byMap{PermuteIndices{P}}, x::Vararg{<:IndexTypes})
-    :($(Expr(:meta, :inline)); getindex(A.a, val, $([:(x[$i]) for i in P]...)))
+@inline @generated function addindex!{P}(A::MappedArray_byMap{PermuteIndices{P}}, val, x::Vararg{<:IndexTypes})
+    :($(Expr(:meta, :inline)); addindex!(A.a, val, $([:(x[$i]) for i in P]...)))
 end
