@@ -7,7 +7,7 @@ round(x::Real, ::RoundingMode{:Nearest}) = trunc(x)
 round{I<:Integer}(::Type{I}, x::Integer, ::RoundingMode) = I(x)
 
 
-struct NearestInterpolation{R<:RoundingMode} <: AbstractIndexMap
+struct NearestInterpolation{R<:RoundingMode} <: AbstractIndexingModifier
     NearestInterpolation(::R=RoundNearest) where {R<:RoundingMode} = new{R}()
 end
 

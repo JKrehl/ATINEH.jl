@@ -3,7 +3,7 @@ import ATINEH:addindex!
 
 export LinearInterpolation
 
-struct LinearInterpolation <: AbstractIndexMap
+struct LinearInterpolation <: AbstractIndexingModifier
 end
 
 @inline getindex(A::MappedArray_byMap{<:LinearInterpolation}, I::Vararg{<:Number}) = getindex(A, I)

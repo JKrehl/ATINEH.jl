@@ -3,7 +3,7 @@ import ATINEH: addindex!
 
 export IndexAffineTransform
 
-struct IndexAffineTransform{AT<:AffineTransform} <: AbstractIndexMap
+struct IndexAffineTransform{AT<:AffineTransform} <: AbstractIndexingModifier
     at::AT
 end
 

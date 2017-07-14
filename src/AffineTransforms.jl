@@ -97,10 +97,10 @@ end
 @inline translate{N, T<:Real}(s::NTuple{N, T}) = AffineTransform{N}(eye(SMatrix{N,N, T}), SVector{N}(s))
 @inline translate{N, T<:NTuple{N, Real}}(s::T) = translate(promote(s...))
 
-function scale{N}(s::Vararg{Range, N})
+@inline function scale{N}(s::Vararg{Range, N})
     AffineTransform(SMatrix{N,N}(diagm(map(step, [s...]))), SVector{N}(map(is -> first(is)-step(is), [s...])))
 end
 
-function unscale{N}(s::Vararg{Range, N})
+@inline function unscale{N}(s::Vararg{Range, N})
     AffineTransform(SMatrix{N,N}(diagm(map(inv ∘ step, [s...]))), SVector{N}(map(is -> -first(is)/step(is)+1, [s...])))
 end
