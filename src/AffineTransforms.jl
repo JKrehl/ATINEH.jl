@@ -48,7 +48,7 @@ function inv(A::AffineTransform)
 end
 
 @inline function (*){N}(A::AffineTransform{N}, B::AffineTransform{N})
-    AffineTransform{N}(A.matrix*B.matrix, A.shift+A.matrix*B.shift)
+    AffineTransform(A.matrix*B.matrix, A.shift+A.matrix*B.shift)
 end
 
 @inline function (*)(A::AffineTransform, v::AbstractVector)
