@@ -47,30 +47,30 @@ function inv(A::AffineTransform)
     AffineTransform(matrix, -matrix*A.shift)
 end
 
-function (*){N}(A::AffineTransform{N}, B::AffineTransform{N})
+@inline function (*){N}(A::AffineTransform{N}, B::AffineTransform{N})
     AffineTransform{N}(A.matrix*B.matrix, A.shift+A.matrix*B.shift)
 end
 
-function (*)(A::AffineTransform, v::AbstractVector)
+@inline function (*)(A::AffineTransform, v::AbstractVector)
     A.matrix*v.+A.shift
 end
 
-function A_mul_B!(u::AbstractVector, A::AffineTransform, v::AbstractVector)
+@inline function A_mul_B!(u::AbstractVector, A::AffineTransform, v::AbstractVector)
     u .= A*v
 end
 
 #TODO deprecate if StaticArrays defines corresponding method
 @generated function (*){N, SM<:SMatrix{N,N}, VT<:NTuple{N, Any}}(sm::SM, vt::VT)
-    :(@ntuple $N i -> $(Expr(:call, :+, (:(sm[i,$j] * vt[$j]) for j in 1:N)...)))
+    :($(Expr(:meta, :inline)); @ntuple $N i -> $(Expr(:call, :+, (:(sm[i,$j] * vt[$j]) for j in 1:N)...)))
 end
 
 @generated function (+){N, SV<:SVector{N}, VT<:NTuple{N, Any}}(vt::VT, sv::SV)
-    :(@ntuple $N i->sv[i]+vt[i])
+    :($(Expr(:meta, :inline)); @ntuple $N i->sv[i]+vt[i])
 end
 (+){N}(sv::SV where SV<:SVector{N}, vt::VT where VT<:NTuple{N, Any}) = vt+sv
 
 
-function (*){N, V<:NTuple{N, Any}}(A::AffineTransform{N}, v::V)
+@inline function (*){N, V<:NTuple{N, Any}}(A::AffineTransform{N}, v::V)
     A.matrix*v+A.shift
 end
 
@@ -83,11 +83,12 @@ function rotate(a)
 end
 
 function axisrotate{T, AT}(x::NTuple{3, T}, a::AT)
+    nx = x./vecnorm(x)
     PT = promote_type(T, AT, Float64)
-    ca = 1-cos(a)
-    sa = sin(a)
+    c = cos(a/2)
+    s = sin(a/2)
 
-    matrix  = SMatrix{3,3}(PT[(i==j ? 1+ca*(-x[i%3+1]^2-x[(i+1)%3+1]^2) : x[i]*x[j])+sa*(i!=j ? -1^((i>j)+i-j)*x[(5-i-j)%3+1] : 0) for i in 1:3, j in 1:3])
+    matrix  = @SMatrix [i==j ? (2*(nx[i]^2-1)*s^2 + 1) : (2*nx[i]*nx[j] - (-1)^(i>j ? i+j : i+j+1)*2*nx[6-i-j]*c*s) for i in 1:3, j in 1:3]
 
     AffineTransform(matrix)
 end
