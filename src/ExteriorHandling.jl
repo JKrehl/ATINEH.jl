@@ -17,7 +17,7 @@ struct ConstantExterior{T} <: AbstractIndexingModifier
 end
 
 @inline function getindex{T}(A::MappedArray{T, N, A, <:ConstantExterior} where {N,A}, idx::Vararg{<:Number})
-    if checkbounds(Bool, A, map(floor, idx)...)
+    if checkbounds(Bool, A, idx...)
         @inbounds re = getindex(A.a, idx...)
         re
     else
@@ -26,13 +26,13 @@ end
 end
 
 @inline function setindex!{T}(A::MappedArray{T, N, A, <:ConstantExterior} where {N,A}, val, idx::Vararg{<:Number})
-    if checkbounds(Bool, A, map(floor, idx)...)
+    if checkbounds(Bool, A, idx...)
         @inbounds setindex!(A.a, val, idx...)
     end
 end
 
 @inline function addindex!{T}(A::MappedArray{T, N, A, <:ConstantExterior} where {N,A}, val, idx::Vararg{<:Number})
-    if checkbounds(Bool, A, map(floor, idx)...)
+    if checkbounds(Bool, A, idx...)
         @inbounds addindex!(A.a, val, idx...)
     end
 end

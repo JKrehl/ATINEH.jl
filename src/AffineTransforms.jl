@@ -59,19 +59,13 @@ end
     u .= A*v
 end
 
-#TODO deprecate if StaticArrays defines corresponding method
-@generated function (*){N, SM<:SMatrix{N,N}, VT<:NTuple{N, Any}}(sm::SM, vt::VT)
-    :($(Expr(:meta, :inline)); @ntuple $N i -> $(Expr(:call, :+, (:(sm[i,$j] * vt[$j]) for j in 1:N)...)))
-end
-
-@generated function (+){N, SV<:SVector{N}, VT<:NTuple{N, Any}}(vt::VT, sv::SV)
-    :($(Expr(:meta, :inline)); @ntuple $N i->sv[i]+vt[i])
-end
-(+){N}(sv::SV where SV<:SVector{N}, vt::VT where VT<:NTuple{N, Any}) = vt+sv
-
-
-@inline function (*){N, V<:NTuple{N, Any}}(A::AffineTransform{N}, v::V)
-    A.matrix*v+A.shift
+@generated function (*){N}(A::AffineTransform{N}, v::Tuple{Vararg{Real,N}})
+    exs = [:($(Symbol("re_",i)) = @ntuple $N j -> muladd(A.matrix[j, $i], v[$i], $(Symbol("re_",i-1))[j])) for i in 2:N]
+    quote
+        $(Expr(:meta, :inline))
+        re_1 = @ntuple $N j -> muladd(A.matrix[j, 1], v[1], A.shift[j])
+        $(exs...)
+    end
 end
 
 # Convenient Constructors
