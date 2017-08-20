@@ -3,18 +3,18 @@ import ATINEH: addindex!
 
 export IndexAffineTransform
 
-struct IndexAffineTransform{AT<:AffineTransform} <: AbstractIndexMap
+struct IndexAffineTransform{AT<:AffineTransform} <: AbstractIndexingModifier
     at::AT
 end
 
-@inline function getindex(A::AbstractArray, iat::IndexAffineTransform, idx::Vararg{<:Number})
-    getindex(A, (iat.at*idx)...)
+@inline function getindex(A::MappedArray_byMap{<:IndexAffineTransform}, idx::Vararg{<:Number})
+    getindex(A.a, (A.m.at*idx)...)
 end
 
-@inline function setindex!(A::AbstractArray, val, iat::IndexAffineTransform, idx::Vararg{<:Number})
-    setindex!(A, val, (iat.at*idx)...)
+@inline function setindex!(A::MappedArray_byMap{<:IndexAffineTransform}, val, idx::Vararg{<:Number})
+    setindex!(A.a, val, (A.m.at*idx)...)
 end
 
-@inline function addindex!(A::AbstractArray, val, iat::IndexAffineTransform, idx::Vararg{<:Number})
-    addindex!(A, val, (iat.at*idx)...)
+@inline function addindex!(A::MappedArray_byMap{<:IndexAffineTransform}, val, idx::Vararg{<:Number})
+    addindex!(A.a, val, (A.m.at*idx)...)
 end

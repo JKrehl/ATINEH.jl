@@ -3,7 +3,7 @@ using Base.Test
 
 @testset "runtests" begin
     include("AffineTransforms.jl")
-    include("IndexMaps.jl")
+    include("IndexingModifiers.jl")
     include("ExteriorHandling.jl")
     @testset "Interpolations" begin
         include("Interpolations/LinearInterpolation.jl")

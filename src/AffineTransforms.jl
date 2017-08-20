@@ -1,7 +1,7 @@
 using StaticArrays
 using Base.Cartesian
 
-export AffineTransform, axisrotate, rotate, translate, scale, unscale
+export AffineTransform, axisrotate, rotate, translate, scale, unscale, SMatrix, SVector
 
 import Base: size, eltype, show
 
@@ -48,7 +48,7 @@ function inv(A::AffineTransform)
 end
 
 @inline function (*){N}(A::AffineTransform{N}, B::AffineTransform{N})
-    AffineTransform{N}(A.matrix*B.matrix, A.shift+A.matrix*B.shift)
+    AffineTransform(A.matrix*B.matrix, A.shift+A.matrix*B.shift)
 end
 
 @inline function (*)(A::AffineTransform, v::AbstractVector)
@@ -59,19 +59,13 @@ end
     u .= A*v
 end
 
-#TODO deprecate if StaticArrays defines corresponding method
-@generated function (*){N, SM<:SMatrix{N,N}, VT<:NTuple{N, Any}}(sm::SM, vt::VT)
-    :($(Expr(:meta, :inline)); @ntuple $N i -> $(Expr(:call, :+, (:(sm[i,$j] * vt[$j]) for j in 1:N)...)))
-end
-
-@generated function (+){N, SV<:SVector{N}, VT<:NTuple{N, Any}}(vt::VT, sv::SV)
-    :($(Expr(:meta, :inline)); @ntuple $N i->sv[i]+vt[i])
-end
-(+){N}(sv::SV where SV<:SVector{N}, vt::VT where VT<:NTuple{N, Any}) = vt+sv
-
-
-@inline function (*){N, V<:NTuple{N, Any}}(A::AffineTransform{N}, v::V)
-    A.matrix*v+A.shift
+@generated function (*){N}(A::AffineTransform{N}, v::Tuple{Vararg{Real,N}})
+    exs = [:($(Symbol("re_",i)) = @ntuple $N j -> muladd(A.matrix[j, $i], v[$i], $(Symbol("re_",i-1))[j])) for i in 2:N]
+    quote
+        $(Expr(:meta, :inline))
+        re_1 = @ntuple $N j -> muladd(A.matrix[j, 1], v[1], A.shift[j])
+        $(exs...)
+    end
 end
 
 # Convenient Constructors
@@ -97,10 +91,10 @@ end
 @inline translate{N, T<:Real}(s::NTuple{N, T}) = AffineTransform{N}(eye(SMatrix{N,N, T}), SVector{N}(s))
 @inline translate{N, T<:NTuple{N, Real}}(s::T) = translate(promote(s...))
 
-function scale{N}(s::Vararg{Range, N})
+@inline function scale{N}(s::Vararg{Range, N})
     AffineTransform(SMatrix{N,N}(diagm(map(step, [s...]))), SVector{N}(map(is -> first(is)-step(is), [s...])))
 end
 
-function unscale{N}(s::Vararg{Range, N})
+@inline function unscale{N}(s::Vararg{Range, N})
     AffineTransform(SMatrix{N,N}(diagm(map(inv ∘ step, [s...]))), SVector{N}(map(is -> -first(is)/step(is)+1, [s...])))
 end

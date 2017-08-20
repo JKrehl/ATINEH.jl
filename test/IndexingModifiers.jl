@@ -1,16 +1,12 @@
 using Base.Test
 
 @testset "IndexTransform" begin
-    @testset "init" begin
-        @test ATINEH.init((1,2,3)) == (1,2)
-    end
-
    @testset "IndexIdentity" begin
-        @test @inferred(IndexIdentity()) isa AbstractIndexMap
+        @test @inferred(IndexIdentity()) isa AbstractIndexingModifier
     end
 
     @testset "IndexMapChain" begin
-        @test @inferred(IndexMapChain()) isa AbstractIndexMap
+        @test @inferred(IndexMapChain()) isa AbstractIndexingModifier
         @test @inferred(IndexMapChain(IndexIdentity())) isa IndexMapChain{Tuple{IndexIdentity}}
         @test @inferred(IndexIdentity() ∘ IndexIdentity()) isa IndexMapChain
         @test @inferred(IndexIdentity() ∘ IndexIdentity() ∘ IndexIdentity()) isa IndexMapChain
