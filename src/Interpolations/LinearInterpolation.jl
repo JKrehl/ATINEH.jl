@@ -7,8 +7,9 @@ struct LinearInterpolation <: AbstractIndexingModifier
 end
 
 @inline getindex(A::MappedArray_byMap{<:LinearInterpolation}, I::Vararg{<:Number}) = getindex(A, I)
+
 @generated function getindex{N, IT<:NTuple{N, Number}}(A::MappedArray_byMap{<:LinearInterpolation}, I::IT)
-    xs = ((Symbol("x_",i) for i in 1:N)...)
+    xs = ntuple(N, j -> Symbol("x_",j))
     ex = :(getindex(A.a, $(xs...)))
     preexs = Expr[]
 
@@ -36,8 +37,9 @@ end
 end
 
 
-@generated function setindex!(A::MappedArray_byMap{<:LinearInterpolation}, val, I::Vararg{<:Number})
+@generated function setindex!(::MappedArray_byMap{<:LinearInterpolation}, _, ::Vararg{<:Number})
     throw(ArgumentError("setindex! is ill defined for linear interpolation"))
+    nothing
 end
 
 @inline addindex!(A::MappedArray_byMap{<:LinearInterpolation}, val, I::Vararg{<:Number}) = addindex!(A, val, I)

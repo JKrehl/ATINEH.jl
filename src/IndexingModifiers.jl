@@ -37,13 +37,13 @@ IndexMapChain(x...) = IndexMapChain(x)
 @inline (∘)(A::AbstractIndexingModifier, B::IndexMapChain) = IndexMapChain(A, B.maps...)
 @inline (∘)(A::IndexMapChain, B::IndexMapChain) = IndexMapChain(A.maps..., B.maps...)
 
-@inline getindex(A::AbstractArray, imc::IndexMapChain{Tuple{}}, x::Vararg) = getindex(A, x...)
+@inline getindex(A::AbstractArray, ::IndexMapChain{Tuple{}}, x::Vararg) = getindex(A, x...)
 @inline getindex(A::AbstractArray, imc::IndexMapChain, x::Vararg) = getindex(MappedArray(A, first(imc.maps)), IndexMapChain(tail(imc.maps)), x...)
 
-@inline setindex!(A::AbstractArray, val, imc::IndexMapChain{Tuple{}}, x::Vararg) = setindex!(A, val, x...)
+@inline setindex!(A::AbstractArray, val, ::IndexMapChain{Tuple{}}, x::Vararg) = setindex!(A, val, x...)
 @inline setindex!(A::AbstractArray, val, imc::IndexMapChain, x::Vararg) = setindex!(MappedArray(A, first(imc.maps)), val, IndexMapChain(tail(imc.maps)), x...)
 
-@inline addindex!(A::AbstractArray, val, imc::IndexMapChain{Tuple{}}, x::Vararg) = addindex!(A, val, x...)
+@inline addindex!(A::AbstractArray, val, ::IndexMapChain{Tuple{}}, x::Vararg) = addindex!(A, val, x...)
 @inline addindex!(A::AbstractArray, val, imc::IndexMapChain, x::Vararg) = addindex!(MappedArray(A, first(imc.maps)), val, IndexMapChain(tail(imc.maps)), x...)
 
 "index map without effect"
