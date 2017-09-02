@@ -8,15 +8,14 @@ import Base: size, eltype, show
 import Base: (==), inv, (*), A_mul_B!, (+)
 
 "type for affine transformation based a NxN SMatrix and a N SVector representing linear and absolute components of the transform"
-struct AffineTransform{N, MT<:SMatrix{N,N}, ST<:SVector{N}}
+struct AffineTransform{N, MT<:StaticArray{Tuple{N,N}}, ST<:StaticArray{Tuple{N}}}
     matrix::MT
     shift::ST
-    AffineTransform(matrix::MT, shift::ST) where {N, MT<:SMatrix{N,N}, ST<:SVector{N}} = new{N,MT,ST}(matrix,shift)
+    AffineTransform(matrix::MT, shift::ST) where {N, MT<:StaticArray{Tuple{N,N}}, ST<:StaticArray{Tuple{N}}} = new{N,MT,ST}(matrix,shift)
 end
 
-AffineTransform{N}(matrix::MT=eye(SMatrix{N,N}), shift::ST=zeros(SVector{N})) where {N, MT<:SMatrix{N,N}, ST<:SVector{N}} = AffineTransform(matrix, shift)
-
-AffineTransform(matrix::MT) where {N, MT<:SMatrix{N,N}} = AffineTransform(matrix, zeros(SVector{N, eltype(MT)}))
+AffineTransform(shift::ST) where {N, ST<:SVector{N}} = AffineTransform(eye(SDiagonal{N, eltype(ST)}))
+AffineTransform(matrix::MT) where {N, MT<:StaticArray{Tuple{N,N}}} = AffineTransform(matrix, zeros(SVector{N, eltype(MT)}))
 
 function AffineTransform{N}(matrix::MT, shift::ST) where {N, MT<:AbstractMatrix, ST<:AbstractVector}
     @assert N == size(matrix,1) == size(matrix, 2) == size(shift,1)
@@ -59,12 +58,19 @@ end
     u .= A*v
 end
 
-@generated function (*){N}(A::AffineTransform{N}, v::Tuple{Vararg{Real,N}})
+@generated function (*){N}(A::AffineTransform{N, <:SMatrix}, v::Tuple{Vararg{Real,N}})
     exs = [:($(Symbol("re_",i)) = @ntuple $N j -> muladd(A.matrix[j, $i], v[$i], $(Symbol("re_",i-1))[j])) for i in 2:N]
     quote
         $(Expr(:meta, :inline))
         re_1 = @ntuple $N j -> muladd(A.matrix[j, 1], v[1], A.shift[j])
         $(exs...)
+    end
+end
+
+@generated function (*){N}(A::AffineTransform{N, <:SDiagonal}, v::Tuple{Vararg{Real,N}})
+    quote
+        $(Expr(:meta, :inline))
+        re = @ntuple $N j -> muladd(diag(A.matrix)[j], v[j], A.shift[j])
     end
 end
 
@@ -92,9 +98,9 @@ end
 @inline translate{N, T<:NTuple{N, Real}}(s::T) = translate(promote(s...))
 
 @inline function scale{N}(s::Vararg{Range, N})
-    AffineTransform(SMatrix{N,N}(diagm(map(step, [s...]))), SVector{N}(map(is -> first(is)-step(is), [s...])))
+    AffineTransform(SDiagonal(map(step, s)), SVector{3}([first(i)-step(i) for i in s]))
 end
 
 @inline function unscale{N}(s::Vararg{Range, N})
-    AffineTransform(SMatrix{N,N}(diagm(map(inv ∘ step, [s...]))), SVector{N}(map(is -> -first(is)/step(is)+1, [s...])))
+    AffineTransform(SDiagonal(map(inv ∘ step, [s...])), SVector{N}(map(i -> -first(i)/step(i)+1, [s...])))
 end
