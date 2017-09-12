@@ -1,21 +1,22 @@
 using StaticArrays
 using Base.Cartesian
 
-export AffineTransform, axisrotate, rotate, translate, scale, unscale, SMatrix, SVector
+export AffineTransform, axisrotate, rotate, translate, scale, unscale, StaticZeroVector, StaticUnitMatrix
 
-import Base: size, eltype, show
+import Base: size, eltype, show, getindex
 
 import Base: (==), inv, (*), A_mul_B!, (+)
 
 "type for affine transformation based a NxN SMatrix and a N SVector representing linear and absolute components of the transform"
-struct AffineTransform{N, MT<:StaticArray{Tuple{N,N}}, ST<:StaticArray{Tuple{N}}}
+struct AffineTransform{N, MT<:StaticMatrix{N,N}, ST<:StaticVector{N}}
     matrix::MT
     shift::ST
-    AffineTransform(matrix::MT, shift::ST) where {N, MT<:StaticArray{Tuple{N,N}}, ST<:StaticArray{Tuple{N}}} = new{N,MT,ST}(matrix,shift)
+    AffineTransform(matrix::MT, shift::ST) where {N, MT<:StaticMatrix{N,N}, ST<:StaticVector{N}} = new{N,MT,ST}(matrix,shift)
 end
 
-AffineTransform(shift::ST) where {N, ST<:SVector{N}} = AffineTransform(eye(SDiagonal{N, eltype(ST)}))
-AffineTransform(matrix::MT) where {N, MT<:StaticArray{Tuple{N,N}}} = AffineTransform(matrix, zeros(SVector{N, eltype(MT)}))
+AffineTransform(shift::ST) where {N, ST<:SVector{N}} = AffineTransform(StaticUnitMatrix{N}(), shift)
+AffineTransform(matrix::MT) where {N, MT<:StaticMatrix{N,N}} = AffineTransform(matrix, StaticZeroVector{N}())
+AffineTransform{N}() where N = AffineTransform(StaticUnitMatrix{N}(), StaticZeroVector{N}())
 
 function AffineTransform{N}(matrix::MT, shift::ST) where {N, MT<:AbstractMatrix, ST<:AbstractVector}
     @assert N == size(matrix,1) == size(matrix, 2) == size(shift,1)
@@ -32,7 +33,7 @@ AffineTransform{N}(::Type{Val{N}}, args...) = AffineTransform{N}(args...)
 @inline eltype{N,MT,ST}(::AffineTransform{N,MT,ST}) = Base.promote_eltype(MT, ST)
 
 function show(io::IO, tf::AffineTransform)
-    println(io, typeof(tf), ":")
+    println(io, summary(tf))
     println(io, "matrix: ", tf.matrix)
     println(io, "shift: ", tf.shift)
 end
@@ -51,7 +52,11 @@ end
 end
 
 @inline function (*)(A::AffineTransform, v::AbstractVector)
-    A.matrix*v.+A.shift
+    A.matrix*v+A.shift
+end
+
+@inline function (*){N}(A::AffineTransform{N}, v::NTuple{N})
+    Tuple(SVector(A.matrix*v)+A.shift)
 end
 
 @inline function A_mul_B!(u::AbstractVector, A::AffineTransform, v::AbstractVector)
@@ -73,6 +78,28 @@ end
         re = @ntuple $N j -> muladd(diag(A.matrix)[j], v[j], A.shift[j])
     end
 end
+
+# Neutral Elements
+
+struct StaticZeroVector{N} <: StaticArray{Tuple{N}, Base.Bottom, 1} end
+struct StaticUnitMatrix{N} <: StaticArray{Tuple{N,N}, Base.Bottom, 2} end
+
+getindex(::StaticZeroVector, ::Int) = false
+getindex{N}(::StaticUnitMatrix{N}, i::Int) = i%(N+1)==1
+
+(+){N}(::StaticZeroVector{N}, s::StaticVector{N}) = s
+(+){N}(s::StaticVector{N}, ::StaticZeroVector{N}) = s
+(+){N}(::StaticZeroVector{N}, ::StaticZeroVector{N}) = StaticZeroVector{N}()
+
+(+){N}(::StaticZeroVector{N}, s::NTuple{N}) = s
+(+){N}(s::NTuple{N}, ::StaticZeroVector{N}) = s
+
+(*){N}(::StaticUnitMatrix{N}, s::StaticVector{N}) = s
+(*){N}(::StaticUnitMatrix{N}, s::NTuple{N}) = s
+
+(*){N}(::StaticUnitMatrix{N}, m::StaticMatrix{N,N}) = m
+(*){N}(m::StaticMatrix{N,N}, ::StaticUnitMatrix{N}) = m
+(*){N}(::StaticUnitMatrix{N}, ::StaticUnitMatrix{N}) = StaticUnitMatrix{N}()
 
 # Convenient Constructors
 
@@ -101,6 +128,10 @@ end
     AffineTransform(SDiagonal(map(step, s)), SVector{3}([first(i)-step(i) for i in s]))
 end
 
+@inline function scale{N}(s::Vararg{Number, N})
+    AffineTransform(SDiagonal(s), StaticZeroVector{N}())
+end
+
 @inline function unscale{N}(s::Vararg{Range, N})
-    AffineTransform(SDiagonal(map(inv ∘ step, [s...])), SVector{N}(map(i -> -first(i)/step(i)+1, [s...])))
+    AffineTransform(SDiagonal(map(inv ∘ step, s)), SVector{N}(map(i -> -first(i)/step(i)+1, [s...])))
 end
