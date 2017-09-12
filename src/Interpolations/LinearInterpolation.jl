@@ -9,7 +9,7 @@ end
 @inline getindex(A::MappedArray_byMap{<:LinearInterpolation}, I::Vararg{<:Number}) = getindex(A, I)
 
 @generated function getindex{N, IT<:NTuple{N, Number}}(A::MappedArray_byMap{<:LinearInterpolation}, I::IT)
-    xs = ntuple(N, j -> Symbol("x_",j))
+    xs = ntuple(j -> Symbol("x_",j), Val{N})
     ex = :(getindex(A.a, $(xs...)))
     preexs = Expr[]
 
