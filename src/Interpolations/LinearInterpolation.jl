@@ -37,7 +37,7 @@ end
 end
 
 
-@generated function setindex!(::MappedArray_byMap{<:LinearInterpolation}, _, ::Vararg{<:Number})
+function setindex!(::MappedArray_byMap{<:LinearInterpolation}, _, ::Vararg{<:Number})
     throw(ArgumentError("setindex! is ill defined for linear interpolation"))
     nothing
 end
