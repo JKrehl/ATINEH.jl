@@ -40,13 +40,16 @@ end
 struct InBounds <: AbstractIndexingModifier end
 
 @inline function getindex{T}(A::MappedArray{T, N, A, <:InBounds} where {N,A}, idx::Vararg{<:Number})
-    @inbounds getindex(A.a, idx...)
+    @inbounds re = getindex(A.a, idx...)
+    re
 end
 
 @inline function setindex!{T}(A::MappedArray{T, N, A, <:InBounds} where {N,A}, val, idx::Vararg{<:Number})
-    @inbounds setindex!(A.a, val, idx...)
+    @inbounds re = setindex!(A.a, val, idx...)
+    re
 end
 
 @inline function addindex!{T}(A::MappedArray{T, N, A, <:InBounds} where {N,A}, val, idx::Vararg{<:Number})
-    @inbounds addindex!(A.a, val, idx...)
+    @inbounds re = addindex!(A.a, val, idx...)
+    re
 end
