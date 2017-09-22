@@ -8,7 +8,8 @@ export MappedInterpolation, VolumetricInterpolation
 
 struct MappedInterpolation{N, T, AT<:AbstractArray{<:AbstractArray{T,N},N}} <: AbstractIndexingModifier
     maps::AT
-    MappedInterpolation(maps::AT) where {N, T, AT<:AbstractArray{<:AbstractArray{T,N},N}} = new{N, T, AT}(maps)
+    offsets::NTuple{N, Int}
+    MappedInterpolation(maps::AT, offsets::NTuple{N,Int}=ntuple(i->0, Val{N})) where {N, T, AT<:AbstractArray{<:AbstractArray{T,N},N}} = new{N, T, AT}(maps, offsets)
 end
 
 struct VolumetricInterpolation <: AbstractIndexingModifier
@@ -17,7 +18,7 @@ struct VolumetricInterpolation <: AbstractIndexingModifier
     VolumetricInterpolation(S::Int=32, D::Int=8) = new(S,D)
 end
 
-VolumetricInterpolation(trafo::AffineTransform, S::Int=32, D::Int=8) = MappedInterpolation(flatcube(trafo, S, D))
+VolumetricInterpolation(trafo::AffineTransform, S::Int=32, D::Int=8) = MappedInterpolation(flatcube(trafo, S, D)...)
 
 @inline subindex{I<:Integer}(a::I, s::Int) = one(I)
 
@@ -30,29 +31,37 @@ VolumetricInterpolation(trafo::AffineTransform, S::Int=32, D::Int=8) = MappedInt
     reinterpret(Int, 1+((d*s) >>> 32))
 end
 
-@generated function flatcube{M,N}(trafo::AffineTransform{M,N}, S, D)
-    T = Float64
+import ATINEH: flatcube
+@generated function flatcube{M,N,MT,ST}(trafo::AffineTransform{M,N,MT,ST}, S, D)
+    T = promote_type(eltype(MT), eltype(ST), Bool)
     quote
-        bins_max = @ntuple $M i -> ceil(Int, sum(abs, trafo.matrix[:,i]))
-        bins_nums = @ntuple $M i -> 1+2*bins_max[i]
+        bins_max = @ntuple $M i -> ceil(Int, sum(abs, trafo.matrix[i,:]))
+        bins_num = @ntuple $M i -> 1+2*bins_max[i]
         bins_idims = @ntuple $M i -> -bins_max[i]:bins_max[i]
-        bins_dims = @ntuple $M i -> (-bins_max[i]-(1-1/D)/2):1/D:(bins_max[i]+(1-1/D)/2)
+        bins_dims = @ntuple $M i -> (-bins_max[i]):1/D:(bins_max[i])
+        bins_offs = @ntuple $M i -> bins_max[i]*D+1
         Dtrafo = unscale(bins_dims...)*AffineTransform(trafo.matrix)
-        bins = zeros(map(length, bins_dims))
+
+        bins = zeros($T, map(length, bins_dims))
         @nloops $N x i->((1-S)/2:(S-1)/2)/S begin
-            addindex!(bins, (1/S)^$M, LinearInterpolation(), IndexAffineTransform(Dtrafo), @ntuple($N, i->x_i)...)
+            addindex!(bins, true, NearestInterpolation(), IndexAffineTransform(Dtrafo), @ntuple($N, i->x_i)...)
         end
-        weights = Array{OffsetArray{eltype(bins), $M, Array{eltype(bins), $M}}, $M}(@ntuple $M i->D)
+        bins .*= inv(S^$N)
+        ebins = MappedArray(bins, ConstantExterior())
+
+        weights = Array{Array{$T, $M}, $M}(@ntuple $M i->D)
         @nloops $M d i->1:D begin
-            @nref($M, weights, i->d_i) = OffsetArray(zeros(eltype(bins), @ntuple $M i->bins_nums[i]), bins_idims)
-            iw = @nref($M, weights, i->d_i).parent
-            @nloops $M b i->1:bins_nums[i] begin
+            iw = zeros($T, bins_num)
+            @nloops $M b i->-bins_max[i]:bins_max[i] begin
                 @nloops $M x i->1:D begin
-                    @nref($M, iw, i->bins_nums[i]-b_i+1) += @nref($M, bins, i->((d_i-1)+(b_i-1)*D+(x_i-1))%(D*bins_nums[i])+1)
+                    @nref($M, iw, i->bins_max[i]-b_i+1) += @nref($M, ebins, i -> bins_offs[i] + (d_i-1) + (b_i)*D + (x_i-div(D,2)-1))
                 end
             end
+            @nref($M, weights, i->d_i) = iw
         end
-        weights
+
+        submap_type = SArray{Tuple{bins_num...}, $T, $M, prod(bins_num)}
+        SArray{Tuple{@ntuple($M,i->D)...}, submap_type}(weights), @ntuple $M i -> bins_max[i]+1
     end
 end
 
@@ -60,16 +69,20 @@ end
     quote
         $(Expr(:meta, :inline))
 
-        @nexprs $N i -> iidx_i = floor(idx[i])
-        @nexprs $N i -> iiidx_i = unsafe_trunc(Int, iidx_i)
+        @nextract $N idx idx
 
-        maps = A.m.maps
-        submap = @nref $N maps i->subindex(idx[i], size(maps, i))
+        @nexprs $N i -> sz_i = size(A.m.maps, i)
+        @nexprs $N i -> @inbounds offs_i = A.m.offsets[i]
 
-        a = A.a
+        @nexprs $N i -> sidx_i = unsafe_trunc(Int, round(sz_i*idx_i))
+        @nexprs $N i -> iidx_i = fld(sidx_i, sz_i) - offs_i
+        @nexprs $N i -> midx_i = 1 + mod(sidx_i, sz_i)
+
+        @inbounds submap = @nref $N A.m.maps i->midx_i
+
         c = zero(T)
         @nloops $N x i->indices(submap, i) begin
-            c += @nref($N, a, i->iiidx_i+x_i)*@nref($N, submap, i->x_i)
+            c += @nref($N, submap, i->x_i)*@nref($N, A.a, i->iidx_i+x_i)
         end
         c
     end
@@ -84,15 +97,20 @@ end
     quote
         $(Expr(:meta, :inline))
 
-        @nexprs $N i -> iidx_i = floor(idx[i])
-        @nexprs $N i -> iiidx_i = unsafe_trunc(Int, iidx_i)
+        @nextract $N idx idx
 
-        maps = A.m.maps
-        submap = @nref $N maps i-> 1+unsafe_trunc(Int, floor(size(maps, i)*(idx[i]-iidx_i)))
+        @nexprs $N i -> sz_i = size(A.m.maps, i)
+        @nexprs $N i -> @inbounds offs_i = A.m.offsets[i]
+
+        @nexprs $N i -> sidx_i = unsafe_trunc(Int, round(sz_i*idx_i))
+        @nexprs $N i -> iidx_i = fld(sidx_i, sz_i) - offs_i
+        @nexprs $N i -> midx_i = 1 + mod(sidx_i, sz_i)
+
+        @inbounds submap = @nref $N A.m.maps i->midx_i
 
         c = zero(T)
         @nloops $N x i->indices(submap, i) begin
-            @ncall $N addindex! A.a @nref($N, submap, i->x_i)*val i->iiidx_i+x_i
+            @ncall $N addindex! A.a @nref($N, submap, i->x_i)*val i->iidx_i+x_i
         end
         c
     end
