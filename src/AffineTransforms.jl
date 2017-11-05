@@ -5,7 +5,7 @@ export AffineTransform, axisrotate, rotate, translate, scale, unscale, StaticZer
 
 import Base: size, eltype, show, getindex, permutedims, det
 
-import Base: (==), inv, (*), A_mul_B!, (+)
+import Base: (==), inv, (*), A_mul_B!, (+), (-)
 
 """
 struct StaticZeroVector{N} <: StaticArray{Tuple{N}, Base.Bottom, 1} end
@@ -20,6 +20,8 @@ struct StaticUnitMatrix{N} <: StaticArray{Tuple{N,N}, Base.Bottom, 2} end
 getindex(::StaticZeroVector, ::Int) = false
 getindex{N}(::StaticUnitMatrix{N}, i::Int) = i%(N+1)==1
 getindex{N}(::StaticUnitMatrix{N}, I::Vararg{Union{Colon, Int64}}) = @SMatrix(eye(Bool, N))[I...]
+
+(-){N}(::StaticZeroVector{N}) = StaticZeroVector{N}()
 
 (+){N}(::StaticZeroVector{N}, s::StaticVector{N}) = s
 (+){N}(s::StaticVector{N}, ::StaticZeroVector{N}) = s
@@ -42,6 +44,7 @@ getindex{N}(::StaticUnitMatrix{N}, I::Vararg{Union{Colon, Int64}}) = @SMatrix(ey
 (*){N}(::StaticUnitMatrix{N}, ::StaticUnitMatrix{N}) = StaticUnitMatrix{N}()
 
 det(::StaticUnitMatrix) = true
+inv{N}(::StaticUnitMatrix{N}) = StaticUnitMatrix{N}()
 
 """
 struct AffineTransform{M, N, MT<:StaticMatrix{M,N}, ST<:StaticVector{M}}
@@ -69,7 +72,7 @@ AffineTransform{N}(::Type{Val{N}}, args...) = AffineTransform{N}(args...)
 
 @inline eltype{M,N,MT,ST}(::AffineTransform{M,N,MT,ST}) = Base.promote_eltype(MT, ST)
 
-@inline inv{N}(at::AffineTransform{N,N}) = let matrix = inv(at.matrix); AffineTransform(matrix, -matrix*at.shift); end
+@inline inv{N}(at::AffineTransform{N,N}) = let matrix = inv(at.matrix); AffineTransform(matrix, -(matrix*at.shift)); end
 
 ### Combination of AffineTransforms
 
@@ -79,7 +82,7 @@ AffineTransform{N}(::Type{Val{N}}, args...) = AffineTransform{N}(args...)
 
 @inline (*){N}(A::AffineTransform, v::SVector{N}) = SVector(A*ntuple(i->v[i], Val{N}))
 
-@generated function (*){M,N}(A::AffineTransform{M,N, <:SMatrix}, v::NTuple{N})
+@generated function (*){M,N}(A::AffineTransform{M,N, <:SMatrix}, v::Tuple{Vararg{T, N} where T})
     quote
         $(Expr(:meta, :inline))
         i_0 = @ntuple $M i -> i<=$N ? A.shift[i] : false
@@ -87,17 +90,17 @@ AffineTransform{N}(::Type{Val{N}}, args...) = AffineTransform{N}(args...)
     end
 end
 
-@generated function (*){N}(A::AffineTransform{N,N, <:SDiagonal}, v::NTuple{N})
+@generated function (*){N}(A::AffineTransform{N,N, <:SDiagonal}, v::Tuple{Vararg{T, N} where T})
     quote
         $(Expr(:meta, :inline))
         @ntuple $N j -> fma(diag(A.matrix)[j], v[j], A.shift[j])
     end
 end
 
-@inline (*){N}(A::AffineTransform{N,N, StaticUnitMatrix{N}, StaticZeroVector{N}}, v::NTuple{N}) = v
-@inline (*){N}(A::AffineTransform{N,N, StaticUnitMatrix{N}}, v::NTuple{N}) = A.shift*v
+@inline (*){N}(A::AffineTransform{N,N, StaticUnitMatrix{N}, StaticZeroVector{N}}, v::Tuple{Vararg{T, N} where T}) = v
+@inline (*){N}(A::AffineTransform{N,N, StaticUnitMatrix{N}}, v::Tuple{Vararg{T, N} where T}) = A.shift*v
 
-### Convenient Constructures
+### Convenient Constructors
 
 @generated function permutedims{N,M}(::Type{Val{N}}, d::Vararg{Int,M})
     quote
@@ -105,12 +108,23 @@ end
         AffineTransform(SMatrix{M, N}(tuple($([:($i==d[$j]) for i in 1:N for j in 1:M]...))))
     end
 end
+
+@inline scale(a::AffineTransform) = AffineTransform(a.matrix)
+
 @inline function scale{N}(s::Vararg{Range, N})
     AffineTransform(SDiagonal(map(step, s)), SVector{N}([first(i)-step(i) for i in s]))
 end
 
 @inline function scale{N}(s::Vararg{Number, N})
     AffineTransform(SDiagonal(s), StaticZeroVector{N}())
+end
+
+@inline scale{N}(s::Vararg{Union{Range, Number}, N}) = scale(s)
+
+@inline @generated function scale{N, T<:Tuple{Vararg{Union{Range, Number}, N}}}(s::T)
+    quote
+        AffineTransform(SDiagonal($(Expr(:tuple, ntuple(i->T.parameters[i]<:Range ? :(step(s[$i])) : :(s[$i]), Val{N})...))), SVector($(Expr(:tuple, ntuple(i->T.parameters[i]<:Range ? :(first(s[$i])-step(s[$i])) : :(zero($(T.parameters[i]))), Val{N})...))))
+    end
 end
 
 @inline function unscale{N}(s::Vararg{Range, N})
@@ -134,6 +148,6 @@ function axisrotate{T, AT}(x::NTuple{3, T}, a::AT)
     AffineTransform(matrix)
 end
 
-@inline translate{N, T<:Real}(s::S where S<:SVector{N, T}) = AffineTransform{N}(eye(SMatrix{N,N, T}), SVector{N}(s))
-@inline translate{N, T<:Real}(s::NTuple{N, T}) = AffineTransform{N}(eye(SMatrix{N,N, T}), SVector{N}(s))
-@inline translate{N, T<:NTuple{N, Real}}(s::T) = translate(promote(s...))
+@inline translate{N, T<:Real}(s::S where S<:SVector{N, T}) = AffineTransform(eye(SMatrix{N,N, T}), SVector{N}(s))
+@inline translate{N, T<:Real}(s::NTuple{N, T}) = AffineTransform(eye(SMatrix{N,N, T}), SVector{N}(s))
+@inline translate(s::Vararg{Real}) = translate(promote(s...))
