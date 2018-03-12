@@ -4,17 +4,17 @@ import ATINEH: addindex!
 export IndexAffineTransform
 
 struct IndexAffineTransform{AT<:AffineTransform} <: AbstractIndexingModifier
-    at::AT
+    trafo::AT
 end
 
-@inline function getindex(A::MappedArray_byMap{<:IndexAffineTransform}, idx::Vararg{<:Number})
-    getindex(A.a, (A.m.at*idx)...)
+@propagate_inbounds function getindex(A::MappedArray_byMap{<:IndexAffineTransform}, idx::Vararg{<:Number})
+    getindex(A.a, (A.m.trafo*idx)...)
 end
 
-@inline function setindex!(A::MappedArray_byMap{<:IndexAffineTransform}, val, idx::Vararg{<:Number})
-    setindex!(A.a, val, (A.m.at*idx)...)
+@propagate_inbounds function setindex!(A::MappedArray_byMap{<:IndexAffineTransform}, val, idx::Vararg{<:Number})
+    setindex!(A.a, val, (A.m.trafo*idx)...)
 end
 
-@inline function addindex!(A::MappedArray_byMap{<:IndexAffineTransform}, val, idx::Vararg{<:Number})
-    addindex!(A.a, val, (A.m.at*idx)...)
+@propagate_inbounds function addindex!(A::MappedArray_byMap{<:IndexAffineTransform}, val, idx::Vararg{<:Number})
+    addindex!(A.a, val, (A.m.trafo*idx)...)
 end

@@ -1,4 +1,4 @@
-import Base: convert, (∘), getindex, setindex!, first, tail
+import Base: convert, (∘), getindex, setindex!, first, tail, @propagate_inbounds
 
 export addindex!
 export AbstractIndexingModifier, MappedArray, MappedArray_byMap, IndexMapChain, IndexIdentity, PermuteIndices
@@ -21,9 +21,9 @@ MappedArray_byMap{I} = MappedArray{T,N,A,I} where {T, N, A}
 
 @inline size(ma::MappedArray) = size(ma.a)
 
-@inline getindex(A::AbstractArray, m::AbstractIndexingModifier, x::Vararg) = getindex(MappedArray(A, m), x...)
-@inline setindex!(A::AbstractArray, val,  m::AbstractIndexingModifier, x::Vararg) = setindex!(MappedArray(A, m), val, x...)
-@inline addindex!(A::AbstractArray, val,  m::AbstractIndexingModifier, x::Vararg) = addindex!(MappedArray(A, m), val, x...)
+@propagate_inbounds getindex(A::AbstractArray, m::AbstractIndexingModifier, x::Vararg) = getindex(MappedArray(A, m), x...)
+@propagate_inbounds setindex!(A::AbstractArray, val,  m::AbstractIndexingModifier, x::Vararg) = setindex!(MappedArray(A, m), val, x...)
+@propagate_inbounds addindex!(A::AbstractArray, val,  m::AbstractIndexingModifier, x::Vararg) = addindex!(MappedArray(A, m), val, x...)
 
 "chain of index maps"
 struct IndexMapChain{T<:Tuple{Vararg{<: AbstractIndexingModifier}}} <: AbstractIndexingModifier
@@ -37,21 +37,21 @@ IndexMapChain(x...) = IndexMapChain(x)
 @inline (∘)(A::AbstractIndexingModifier, B::IndexMapChain) = IndexMapChain(A, B.maps...)
 @inline (∘)(A::IndexMapChain, B::IndexMapChain) = IndexMapChain(A.maps..., B.maps...)
 
-@inline getindex(A::AbstractArray, ::IndexMapChain{Tuple{}}, x::Vararg) = getindex(A, x...)
-@inline getindex(A::AbstractArray, imc::IndexMapChain, x::Vararg) = getindex(MappedArray(A, first(imc.maps)), IndexMapChain(tail(imc.maps)), x...)
+@propagate_inbounds getindex(A::AbstractArray, ::IndexMapChain{Tuple{}}, x::Vararg) = getindex(A, x...)
+@propagate_inbounds getindex(A::AbstractArray, imc::IndexMapChain, x::Vararg) = getindex(MappedArray(A, first(imc.maps)), IndexMapChain(tail(imc.maps)), x...)
 
-@inline setindex!(A::AbstractArray, val, ::IndexMapChain{Tuple{}}, x::Vararg) = setindex!(A, val, x...)
-@inline setindex!(A::AbstractArray, val, imc::IndexMapChain, x::Vararg) = setindex!(MappedArray(A, first(imc.maps)), val, IndexMapChain(tail(imc.maps)), x...)
+@propagate_inbounds setindex!(A::AbstractArray, val, ::IndexMapChain{Tuple{}}, x::Vararg) = setindex!(A, val, x...)
+@propagate_inbounds setindex!(A::AbstractArray, val, imc::IndexMapChain, x::Vararg) = setindex!(MappedArray(A, first(imc.maps)), val, IndexMapChain(tail(imc.maps)), x...)
 
-@inline addindex!(A::AbstractArray, val, ::IndexMapChain{Tuple{}}, x::Vararg) = addindex!(A, val, x...)
-@inline addindex!(A::AbstractArray, val, imc::IndexMapChain, x::Vararg) = addindex!(MappedArray(A, first(imc.maps)), val, IndexMapChain(tail(imc.maps)), x...)
+@propagate_inbounds addindex!(A::AbstractArray, val, ::IndexMapChain{Tuple{}}, x::Vararg) = addindex!(A, val, x...)
+@propagate_inbounds addindex!(A::AbstractArray, val, imc::IndexMapChain, x::Vararg) = addindex!(MappedArray(A, first(imc.maps)), val, IndexMapChain(tail(imc.maps)), x...)
 
 "index map without effect"
 struct IndexIdentity <: AbstractIndexingModifier end
 
-@inline getindex(A::MappedArray_byMap{IndexIdentity}, x::Vararg{<:IndexTypes}) = getindex(A.a, x...)
-@inline setindex!(A::MappedArray_byMap{IndexIdentity}, val, x::Vararg{<:IndexTypes}) = setindex!(A.a, val, x...)
-@inline addindex!(A::MappedArray_byMap{IndexIdentity}, val, x::Vararg{<:IndexTypes}) = addindex!(A.a, val, x...)
+@propagate_inbounds getindex(A::MappedArray_byMap{IndexIdentity}, x::Vararg{<:IndexTypes}) = getindex(A.a, x...)
+@propagate_inbounds setindex!(A::MappedArray_byMap{IndexIdentity}, val, x::Vararg{<:IndexTypes}) = setindex!(A.a, val, x...)
+@propagate_inbounds addindex!(A::MappedArray_byMap{IndexIdentity}, val, x::Vararg{<:IndexTypes}) = addindex!(A.a, val, x...)
 
 
 """
@@ -67,14 +67,14 @@ end
 
 PermuteIndices(P::Vararg{Int}) = PermuteIndices{P}()
 
-@inline @generated function getindex{P}(A::MappedArray_byMap{PermuteIndices{P}}, x::Vararg{<:IndexTypes})
+@propagate_inbounds @generated function getindex{P}(A::MappedArray_byMap{PermuteIndices{P}}, x::Vararg{<:IndexTypes})
     :($(Expr(:meta, :inline)); getindex(A.a, $([:(x[$i]) for i in P]...)))
 end
 
-@inline @generated function setindex!{P}(A::MappedArray_byMap{PermuteIndices{P}}, val, x::Vararg{<:IndexTypes})
+@propagate_inbounds @generated function setindex!{P}(A::MappedArray_byMap{PermuteIndices{P}}, val, x::Vararg{<:IndexTypes})
     :($(Expr(:meta, :inline)); setindex!(A.a, val, $([:(x[$i]) for i in P]...)))
 end
 
-@inline @generated function addindex!{P}(A::MappedArray_byMap{PermuteIndices{P}}, val, x::Vararg{<:IndexTypes})
+@propagate_inbounds @generated function addindex!{P}(A::MappedArray_byMap{PermuteIndices{P}}, val, x::Vararg{<:IndexTypes})
     :($(Expr(:meta, :inline)); addindex!(A.a, val, $([:(x[$i]) for i in P]...)))
 end
