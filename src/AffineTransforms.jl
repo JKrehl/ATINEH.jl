@@ -47,7 +47,7 @@ det(::StaticUnitMatrix) = true
 inv{N}(::StaticUnitMatrix{N}) = StaticUnitMatrix{N}()
 
 """
-struct AffineTransform{M, N, MT<:StaticMatrix{M,N}, ST<:StaticVector{M}}
+struct AffineTransform{N, MT<:StaticMatrix{N,N}, ST<:StaticVector{N}}
 """
 struct AffineTransform{N, MT<:StaticMatrix{N,N}, ST<:StaticVector{N}}
     matrix::MT
