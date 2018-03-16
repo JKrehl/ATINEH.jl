@@ -49,17 +49,17 @@ inv{N}(::StaticUnitMatrix{N}) = StaticUnitMatrix{N}()
 """
 struct AffineTransform{M, N, MT<:StaticMatrix{M,N}, ST<:StaticVector{M}}
 """
-struct AffineTransform{M, N, MT<:StaticMatrix{M,N}, ST<:StaticVector{M}}
+struct AffineTransform{N, MT<:StaticMatrix{N,N}, ST<:StaticVector{N}}
     matrix::MT
     shift::ST
-    AffineTransform(matrix::MT, shift::ST) where {M,N, MT<:StaticMatrix{M,N}, ST<:StaticVector{M}} = new{M,N,MT,ST}(matrix, shift)
+    AffineTransform(matrix::MT, shift::ST) where {N, MT<:StaticMatrix{N,N}, ST<:StaticVector{N}} = new{N,MT,ST}(matrix, shift)
 end
 
 AffineTransform(shift::ST) where {N, ST<:SVector{N}} = AffineTransform(StaticUnitMatrix{N}(), shift)
-AffineTransform(matrix::MT) where {M, N, MT<:StaticMatrix{M,N}} = AffineTransform(matrix, StaticZeroVector{M}())
+AffineTransform(matrix::MT) where {N, MT<:StaticMatrix{N,N}} = AffineTransform(matrix, StaticZeroVector{N}())
 AffineTransform{N}() where N = AffineTransform(StaticUnitMatrix{N}(), StaticZeroVector{N}())
 
-function AffineTransform{M,N}(matrix::MT, shift::ST) where {M, N, MT<:AbstractMatrix, ST<:AbstractVector}
+function AffineTransform{N}(matrix::MT, shift::ST) where {N, MT<:AbstractMatrix, ST<:AbstractVector}
     @assert M == size(matrix,1) == size(shift,1)
     @assert N == size(matrix, 2)
     AffineTransform{N}(SMatrix{N,N}(matrix), SVector{N}(shift))
@@ -67,38 +67,38 @@ end
 
 AffineTransform{N}(::Type{Val{N}}, args...) = AffineTransform{N}(args...)
 
-@inline size{M,N}(::AffineTransform{M,N}) = (M,N)
-@inline size{M,N, A<:AffineTransform{M,N}}(::Type{A}) = (M,N)
+@inline size{N}(::AffineTransform{N}) = (N,N)
+@inline size{N, A<:AffineTransform{N}}(::Type{A}) = (N,N)
 
-@inline eltype{M,N,MT,ST}(::AffineTransform{M,N,MT,ST}) = Base.promote_eltype(MT, ST)
+@inline eltype{N,MT,ST}(::AffineTransform{N,MT,ST}) = Base.promote_eltype(MT, ST)
 
-@inline inv{N}(at::AffineTransform{N,N}) = let matrix = inv(at.matrix); AffineTransform(matrix, -(matrix*at.shift)); end
+@inline inv{N}(at::AffineTransform{N}) = let matrix = inv(at.matrix); AffineTransform(matrix, -(matrix*at.shift)); end
 
 ### Combination of AffineTransforms
 
-@inline (*){M,N,O}(A::AffineTransform{M,N}, B::AffineTransform{N,O}) = AffineTransform(A.matrix*B.matrix, (A.matrix*B.shift)+A.shift)
+@inline (*){N}(A::AffineTransform{N}, B::AffineTransform{N}) = AffineTransform(A.matrix*B.matrix, (A.matrix*B.shift)+A.shift)
 
 ### Application of AffineTransforms
 
 @inline (*){N}(A::AffineTransform, v::SVector{N}) = SVector(A*ntuple(i->v[i], Val{N}))
 
-@generated function (*){M,N}(A::AffineTransform{M,N, <:SMatrix}, v::Tuple{Vararg{T, N} where T})
+@generated function (*){N}(A::AffineTransform{N, <:SMatrix}, v::Tuple{Vararg{T, N} where T})
     quote
         $(Expr(:meta, :inline))
-        i_0 = @ntuple $M i -> i<=$N ? A.shift[i] : false
-        $(Expr(:block, (:($(Symbol("i_", j)) = @ntuple $M k -> fma(A.matrix[k,$j], v[$j], $(Symbol("i_",j-1))[k])) for j in 1:N)...))
+        i_0 = @ntuple $N i -> i<=$N ? A.shift[i] : false
+        $(Expr(:block, (:($(Symbol("i_", j)) = @ntuple $N k -> fma(A.matrix[k,$j], v[$j], $(Symbol("i_",j-1))[k])) for j in 1:N)...))
     end
 end
 
-@generated function (*){N}(A::AffineTransform{N,N, <:SDiagonal}, v::Tuple{Vararg{T, N} where T})
+@generated function (*){N}(A::AffineTransform{N, <:SDiagonal}, v::Tuple{Vararg{T, N} where T})
     quote
         $(Expr(:meta, :inline))
         @ntuple $N j -> fma(diag(A.matrix)[j], v[j], A.shift[j])
     end
 end
 
-@inline (*){N}(A::AffineTransform{N,N, StaticUnitMatrix{N}, StaticZeroVector{N}}, v::Tuple{Vararg{T, N} where T}) = v
-@inline (*){N}(A::AffineTransform{N,N, StaticUnitMatrix{N}}, v::Tuple{Vararg{T, N} where T}) = A.shift*v
+@inline (*){N}(A::AffineTransform{N, StaticUnitMatrix{N}, StaticZeroVector{N}}, v::Tuple{Vararg{T, N} where T}) = v
+@inline (*){N}(A::AffineTransform{N, StaticUnitMatrix{N}}, v::Tuple{Vararg{T, N} where T}) = A.shift*v
 
 ### Convenient Constructors
 
