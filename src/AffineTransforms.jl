@@ -112,13 +112,6 @@ end
 
 ### Convenient Constructors
 
-@generated function permutedims{N,M}(::Type{Val{N}}, d::Vararg{Int,M})
-    quote
-        Expr(:meta, :inline)
-        AffineTransform(SMatrix{M, N}(tuple($([:($i==d[$j]) for i in 1:N for j in 1:M]...))))
-    end
-end
-
 @inline scale(a::AffineTransform) = AffineTransform(a.matrix)
 
 @inline function scale{N}(s::Vararg{Range, N})
