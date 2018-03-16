@@ -14,7 +14,7 @@ end
 struct FlatIndexSupport{N,V,I<:Number} <: AbstractIndexSupport{N,V,I}
     val::V
     idx::I
-    FlatIndexSupport(::Type{Val{N}}, val::V, idx::I) where {N,V,I<:Number} = new{N,V,I}(val, idx)
+    FlatIndexSupport(::Val{N}, val::V, idx::I) where {N,V,I<:Number} = new{N,V,I}(val, idx)
     FlatIndexSupport{N,V,I}(val, idx=1) where {N,V,I} = new{N,V,I}(V(val), I(idx))
 end
 @inline (*){N, IS<:FlatIndexSupport{N}, V<:Number}(val::V, isp::IS) = FlatIndexSupport(Val{N}, val*isp.val, isp.idx)

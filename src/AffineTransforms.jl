@@ -1,9 +1,17 @@
 using StaticArrays
 using Base.Cartesian
 
-export AffineTransform, axisrotate, rotate, translate, scale, unscale, StaticZeroVector, StaticUnitMatrix
+export AffineTransform,
+    LinearAffineTransform,
+    StaticZeroVector,
+    StaticUnitMatrix,
+    axisrotate,
+    rotate,
+    translate,
+    scale,
+    unscale
 
-import Base: size, eltype, show, getindex, permutedims, det
+import Base: size, eltype, show, getindex, det
 
 import Base: (==), inv, (*), A_mul_B!, (+), (-)
 
@@ -55,6 +63,8 @@ struct AffineTransform{N, MT<:StaticMatrix{N,N}, ST<:StaticVector{N}}
     AffineTransform(matrix::MT, shift::ST) where {N, MT<:StaticMatrix{N,N}, ST<:StaticVector{N}} = new{N,MT,ST}(matrix, shift)
 end
 
+LinearAffineTransform{N,MT<:StaticMatrix{N,N}} = AffineTransform{N, MT, StaticZeroVector{N}}
+
 AffineTransform(shift::ST) where {N, ST<:SVector{N}} = AffineTransform(StaticUnitMatrix{N}(), shift)
 AffineTransform(matrix::MT) where {N, MT<:StaticMatrix{N,N}} = AffineTransform(matrix, StaticZeroVector{N}())
 AffineTransform{N}() where N = AffineTransform(StaticUnitMatrix{N}(), StaticZeroVector{N}())
@@ -65,7 +75,7 @@ function AffineTransform{N}(matrix::MT, shift::ST) where {N, MT<:AbstractMatrix,
     AffineTransform{N}(SMatrix{N,N}(matrix), SVector{N}(shift))
 end
 
-AffineTransform{N}(::Type{Val{N}}, args...) = AffineTransform{N}(args...)
+AffineTransform{N}(::Val{N}, args...) = AffineTransform{N}(args...)
 
 @inline size{N}(::AffineTransform{N}) = (N,N)
 @inline size{N, A<:AffineTransform{N}}(::Type{A}) = (N,N)
