@@ -140,11 +140,14 @@ end
 function axisrotate{T, AT}(x::NTuple{3, T}, a::AT)
     nx = x./vecnorm(x)
     PT = promote_type(T, AT, Float64)
-    c = cos(a/2)
-    s = sin(a/2)
+    c = cos(a)
+    s = sin(a)
 
-    matrix  = @SMatrix [i==j ? (2*(nx[i]^2-1)*s^2 + 1) : (2*nx[i]*nx[j] - (-1)^(i>j ? i+j : i+j+1)*2*nx[6-i-j]*c*s) for i in 1:3, j in 1:3]
-
+    matrix = @SMatrix [ i==j ?
+                        c + (1-c)*nx[i]*nx[j] :
+                        s * (iseven(mod1(i-j, 3)) ? -nx[6-i-j] : nx[6-i-j]) + (1-c)*nx[i]*nx[j]
+                        for i in 1:3, j in 1:3 ]
+    
     AffineTransform(matrix)
 end
 
