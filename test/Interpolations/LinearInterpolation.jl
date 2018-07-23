@@ -1,4 +1,4 @@
-using Base.Test
+using Test
 
 @testset "Interpolation" begin
     @testset "LinearInterpolation" begin

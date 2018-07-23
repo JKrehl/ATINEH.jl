@@ -1,5 +1,5 @@
 using ATINEH
-using Base.Test
+using Test
 
 @testset "runtests" begin
     include("AffineTransforms.jl")

@@ -1,11 +1,12 @@
 import Base: convert, (∘), getindex, setindex!, first, tail, @propagate_inbounds
 
 export addindex!
-export AbstractIndexingModifier, MappedArray, MappedArray_byMap, IndexMapChain, IndexIdentity, AsType, PermuteIndices
+export AbstractIndexingModifier, MappedArray, MappedArray_byMap, IndexIdentity, AsType, PermuteIndices, ConstantInterior
 
 IndexTypes = Union{Number, Tuple, AffineTransform}
 
-@inline addindex!(A::AbstractArray, value, i...) = begin @boundscheck checkbounds(A, i...); @inbounds A[i...] += value end
+@propagate_inbounds addindex!(A::AbstractArray, value, i...) = begin @boundscheck checkbounds(A, i...); @inbounds A[i...] += value; A end
+@propagate_inbounds addindex!(A::AbstractArray, value, i::CartesianIndex) = addindex!(A, value, Tuple(i)...)
 
 "abstract index map"
 abstract type AbstractIndexingModifier end
@@ -49,6 +50,19 @@ struct IndexIdentity <: AbstractIndexingModifier end
 @propagate_inbounds setindex!(A::MappedArray_byMap{IndexIdentity}, val, x::Vararg{<:IndexTypes}) = setindex!(A.array, val, x...)
 @propagate_inbounds addindex!(A::MappedArray_byMap{IndexIdentity}, val, x::Vararg{<:IndexTypes}) = addindex!(A.array, val, x...)
 
+"return constant value instead of value in array"
+struct ConstantInterior{T} <: AbstractIndexingModifier
+    value::T
+end
+@propagate_inbounds getindex(A::AbstractArray , m::ConstantInterior{T}, x::Vararg) where T = getindex(MappedArray{T}(A, m), x...)
+@propagate_inbounds setindex!(A::AbstractArray, val,  m::ConstantInterior{T}, x::Vararg) where T = nothing
+@propagate_inbounds addindex!(A::AbstractArray, val,  m::ConstantInterior{T}, x::Vararg) where T = nothing
+
+
+@propagate_inbounds getindex(A::MappedArray_byMap{<:ConstantInterior}, x::Vararg{<:IndexTypes}) = A.map.value
+@propagate_inbounds setindex!(A::MappedArray_byMap{<:ConstantInterior}, val, x::Vararg{<:IndexTypes}) = nothing
+@propagate_inbounds addindex!(A::MappedArray_byMap{<:ConstantInterior}, val, x::Vararg{<:IndexTypes}) = nothing
+
 
 """
     a fun helper function
@@ -74,7 +88,7 @@ end
 
 PermuteIndices(P::Vararg{Int}) = PermuteIndices{P}()
 
-@generated function getindex{P,N}(A::MappedArray_byMap{PermuteIndices{P}}, x::Vararg{<:IndexTypes,N})
+@generated function getindex(A::MappedArray_byMap{PermuteIndices{P}}, x::Vararg{<:IndexTypes,N}) where {P,N}
     @assert all(map(i->i<=N,P))
     quote
         $(Expr(:meta, :inline, :propagate_inbounds))
@@ -83,7 +97,7 @@ PermuteIndices(P::Vararg{Int}) = PermuteIndices{P}()
     end
 end
 
-@generated function setindex!{P,N}(A::MappedArray_byMap{PermuteIndices{P}}, val, x::Vararg{<:IndexTypes,N})
+@generated function setindex!(A::MappedArray_byMap{PermuteIndices{P}}, val, x::Vararg{<:IndexTypes,N}) where {P,N}
     @assert all(map(i->i<=N,P))
     quote
         $(Expr(:meta, :inline, :propagate_inbounds))
@@ -92,7 +106,7 @@ end
     end
 end
 
-@generated function addindex!{P,N}(A::MappedArray_byMap{PermuteIndices{P}}, val, x::Vararg{<:IndexTypes,N})
+@generated function addindex!(A::MappedArray_byMap{PermuteIndices{P}}, val, x::Vararg{<:IndexTypes,N}) where {P,N}
     @assert all(map(i->i<=N,P))
     quote
         $(Expr(:meta, :inline, :propagate_inbounds))

@@ -1,4 +1,4 @@
-using Base.Test
+using Test
 
 @testset "Exterior Handling" begin
     @testset "ConstantExterior" begin

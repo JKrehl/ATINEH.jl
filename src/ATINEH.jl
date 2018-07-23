@@ -2,7 +2,7 @@ __precompile__()
 module ATINEH
 
 using Base.Cartesian
-import Base.Cartesian: _nref, inlineanonymous
+import Base.Cartesian.inlineanonymous
 
 export @update, @implupdate, update
 
@@ -31,15 +31,15 @@ two syntaxes are possible:
 """
 macro implupdate(T, name::Symbol, object::Symbol, ex::Expr)
     @assert ex.head == :->
-    eT = eval(current_module(), T)
-    callsym = ex.args[1] isa Expr && ex.args[1].head == :tuple ? (ex.args[1].args...) : (ex.args[1],)
+    eT = Core.eval(__module__, T)
+    callsym = ex.args[1] isa Expr && ex.args[1].head == :tuple ? (ex.args[1].args...,) : (ex.args[1],)
     quote
         @inline update(x::$eT, ::$(Val{name}), $(callsym...)) = $(ex.args[2])
     end |> esc
 end
 
 macro implupdate(T, name::Symbol)
-    eT = eval(current_module(), T)
+    eT = Core.eval(__module__, T)
     @assert !isempty(methods(eT, map(nm->fieldtype(eT, nm), fieldnames(eT))))
     ex = Expr(:call, eT, [fn==name ? name : :(x.$fn) for fn in fieldnames(eT)]...)
     quote

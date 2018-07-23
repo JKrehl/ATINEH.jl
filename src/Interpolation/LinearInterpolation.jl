@@ -15,7 +15,7 @@ end
         rdx_ = Symbol("rdx_", i)
         ex = quote
             local r1 = let $x_ = $idx_
-               (one($T)-$rdx_) * $ex
+               (one($rdx_)-$rdx_) * $ex
             end
             local r2 = let $x_ = $idx_+1
                 $rdx_ * $ex
@@ -31,7 +31,7 @@ end
         @nexprs $N i -> begin
             fdx_i = floor(I[i])
             idx_i = unsafe_trunc(Int, fdx_i)
-            rdx_i = $T(I[i] - fdx_i)
+            rdx_i = I[i] - fdx_i
         end
         
         $ex
@@ -54,7 +54,7 @@ end
         rdx_ = Symbol("rdx_", i)
         
         ex = quote begin
-            let $x_ = $idx_, val=val*(1-$rdx_)
+            let $x_ = $idx_, val=val*(one($rdx_)-$rdx_)
                 $ex
             end
             let $x_ = $idx_+1, val=val*$rdx_
@@ -70,11 +70,9 @@ end
         @nexprs $N i -> begin
             fdx_i = floor(I[i])
             idx_i = unsafe_trunc(Int, fdx_i)
-            rdx_i = $T(I[i] - fdx_i)
+            rdx_i = I[i] - fdx_i
         end
         
         $ex
-        
-        nothing
     end
 end
