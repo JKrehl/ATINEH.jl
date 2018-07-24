@@ -3,7 +3,7 @@ export AbstractInterpolation
 
 abstract type AbstractInterpolation <: AbstractIndexingModifier end
 
-@implupdate AbstractInterpolation transform x v::AffineTransform -> x
+update(ai::AbstractInterpolation, ::Val{:transform}, t) = ai
 
 include("LinearInterpolation.jl")
 include("NearestInterpolation.jl")

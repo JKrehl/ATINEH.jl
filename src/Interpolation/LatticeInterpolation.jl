@@ -17,7 +17,7 @@ end
 LinearLatticeInterpolation(transform::AffineTransform) = LinearLatticeInterpolation(transform.matrix)
 LinearLatticeInterpolation() = LinearLatticeInterpolation(AffineTransform{1}())
 
-@implupdate LinearLatticeInterpolation transform x t::AffineTransform -> LinearLatticeInterpolation(t)
+update(lli::LinearLatticeInterpolation, ::Val{:transform}, t) = LinearLatticeInterpolation(t)
 
 @generated function getindex(A::MappedArray{T,<:Any,<:Any,<:LinearLatticeInterpolation{N}}, I::Vararg{<:Number, N}) where {N,T}
     ex = :(@ncall $N getindex A.array i->x_i)

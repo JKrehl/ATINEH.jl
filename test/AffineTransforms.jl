@@ -9,10 +9,10 @@ using StaticArrays
         @test AffineTransform{3, StaticArrays.SMatrix{3,3,Float64,9}, StaticArrays.SVector{3, Int}} <: AffineTransform{3}
         @test @inferred(AffineTransform(ones(SMatrix{3,3,Int}), zeros(SVector{3,Int}))) isa AffineTransform{3, SMatrix{3,3,Int,9}, SVector{3,Int}}
         @test @inferred(AffineTransform{2}()) isa AffineTransform{2,StaticUnitMatrix{2},StaticZeroVector{2}}
-        @test @inferred(AffineTransform(eye(SMatrix{4,4,Float64}))) isa AffineTransform{4}
-        @test @inferred(AffineTransform(eye(SMatrix{3,3}))) == AffineTransform(eye(SMatrix{3,3}), zeros(SVector{3,Float64}))
-        @test @inferred(AffineTransform(eye(3), zeros(3))) == AffineTransform(eye(SMatrix{3,3}), zeros(SVector{3}))
-        @test @inferred(AffineTransform(Val{3}(), eye(3), zeros(3))) == AffineTransform(eye(SMatrix{3,3}), zeros(SVector{3}))
+        @test @inferred(AffineTransform(SMatrix{4,4,Float64}(I))) isa AffineTransform{4}
+        @test @inferred(AffineTransform(SMatrix{3,3}(I))) == AffineTransform(SMatrix{3,3}(I), zeros(SVector{3,Float64}))
+        @test @inferred(AffineTransform{3}(eye(3), zeros(3))) == AffineTransform(eye(SMatrix{3,3}), zeros(SVector{3}))
+        @test @inferred(AffineTransform(Val{3}(), Matrix{Bool}(I,3,3), zeros(3))) == AffineTransform(SMatrix{3,3}(I), zeros(SVector{3}))
         @test @inferred(AffineTransform(Val{3}())) == AffineTransform{3}()
     end
 
@@ -28,7 +28,7 @@ using StaticArrays
         @test @inferred(inv(AffineTransform{3}())) == AffineTransform{3}()
         @test @inferred(inv(inv(AffineTransform(SMatrix{2,2}(Diagonal([2.,2.])))))) == AffineTransform(SMatrix{2,2}(Diagonal([2.,2.])))
         @test @inferred(AffineTransform(SMatrix{2,2}(Diagonal([2.,2.])))*AffineTransform(SMatrix{2,2}(Diagonal([2,2])))) == AffineTransform(SMatrix{2,2}(Diagonal([4.,4.])))
-        @test @inferred(*(AffineTransform(SMatrix{3,3}(Diagonal([2.,2.,1.]))), (4,5,6))) == (8.,10.,6.)
+        @test @inferred(*(AffineTransform(SMatrix{3,3}(Diagonal([2.,2.,1.]))), SVector(4,5,6))) == (8.,10.,6.)
         @test begin a=ones(3); @inferred(A_mul_B!(a, AffineTransform(SMatrix{3,3}(Diagonal([2.,2.,1.]))), [4,5,6])); a == Float64[8.,10.,6.]; end
         @test @inferred(SMatrix{3,3}(Diagonal([0,2,1])) * (1,2.,3)) == (0.0, 4.0, 3.0)
         @test @inferred(+(SVector{5}([1,2,3,4,5]), (1.,1,1.,1,1.))) == (2.0, 3, 4.0, 5, 6.0)

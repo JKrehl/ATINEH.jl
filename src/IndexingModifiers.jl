@@ -19,13 +19,17 @@ struct MappedArray{T, N, A<:AbstractArray, M<:AbstractIndexingModifier} <: Abstr
     MappedArray{T}(array::A, map::M) where {T, N, S, A<:AbstractArray{S,N}, M<:AbstractIndexingModifier} = new{T,N,A,M}(array, map)
     MappedArray{T, N}(array::A, map::M) where {T, N, A<:AbstractArray, M<:AbstractIndexingModifier} = new{T,N,A,M}(array, map)
 end
-MappedArray_byMap{I} = MappedArray{T,N,A,I} where {T, N, A}
+MappedArray_byMap{I} = MappedArray{<:Any,<:Any,<:Any,I}
 
 @inline size(ma::MappedArray) = size(ma.array)
 
-@propagate_inbounds getindex(A::AbstractArray, m::AbstractIndexingModifier, x::Vararg) = getindex(MappedArray(A, m), x...)
-@propagate_inbounds setindex!(A::AbstractArray, val,  m::AbstractIndexingModifier, x::Vararg) = setindex!(MappedArray(A, m), val, x...)
-@propagate_inbounds addindex!(A::AbstractArray, val,  m::AbstractIndexingModifier, x::Vararg) = addindex!(MappedArray(A, m), val, x...)
+@propagate_inbounds getindex(A::AbstractArray, m::AbstractIndexingModifier, x...) = getindex(MappedArray(A, m), x...)
+@propagate_inbounds setindex!(A::AbstractArray, val,  m::AbstractIndexingModifier, x...) = setindex!(MappedArray(A, m), val, x...)
+@propagate_inbounds addindex!(A::AbstractArray, val,  m::AbstractIndexingModifier, x...) = addindex!(MappedArray(A, m), val, x...)
+
+@propagate_inbounds getindex(A::MappedArray, x::CartesianIndex) = getindex(A, Tuple(x)...)
+@propagate_inbounds setindex!(A::MappedArray, v, x::CartesianIndex) = setindex!(A, v, Tuple(x)...)
+@propagate_inbounds addindex!(A::MappedArray, v, x::CartesianIndex) = addindex!(A, v, Tuple(x)...)
 
 "convert elements to new type"
 struct AsType{T} <: AbstractIndexingModifier
@@ -44,7 +48,7 @@ end
 @propagate_inbounds addindex!(A::MappedArray_byMap{<:AsType}, val, x::Vararg{<:IndexTypes}) = addindex!(A.array, val, x...)
 
 "index map without effect"
-struct IndexIdentity <: AbstractIndexingModifier end
+struct IndexIdentity<: AbstractIndexingModifier end
 
 @propagate_inbounds getindex(A::MappedArray_byMap{IndexIdentity}, x::Vararg{<:IndexTypes}) = getindex(A.array, x...)
 @propagate_inbounds setindex!(A::MappedArray_byMap{IndexIdentity}, val, x::Vararg{<:IndexTypes}) = setindex!(A.array, val, x...)

@@ -77,7 +77,7 @@ AffineTransform{N}() where N = AffineTransform(StaticUnitMatrix{N}(), StaticZero
 
 function AffineTransform{N}(matrix::MT, shift::ST) where {N, MT<:AbstractMatrix, ST<:AbstractVector}
     @assert N == size(matrix,1) == size(shift,1) == size(matrix, 2)
-    AffineTransform{N}(SMatrix{N,N}(matrix), SVector{N}(shift))
+    AffineTransform(SMatrix{N,N}(matrix), SVector{N}(shift))
 end
 
 AffineTransform(::Val{N}, args...) where N = AffineTransform{N}(args...)
@@ -135,7 +135,7 @@ end
     end
 end
 
-@inline function unscale(s::Vararg{AbstractRange, N}) where N
+@inline function unscale(s::Vararg{Range, N}) where N
     AffineTransform(SDiagonal(map(inv ∘ step, s)), SVector{N}(map(i -> -first(i)/step(i)+1, [s...])))
 end
 
@@ -146,7 +146,7 @@ function rotate(a)
 end
 
 function axisrotate(x::NTuple{3, T}, a::AT) where {T,AT}
-    nx = x./vecnorm(x)
+    nx = x./norm(x)
     PT = promote_type(T, AT, Float64)
     c = cos(a)
     s = sin(a)
