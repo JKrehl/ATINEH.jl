@@ -27,6 +27,7 @@ end
     quote
         $(Expr(:meta, :inline))
         $(Expr(:meta, :propagate_inbounds))
+
         
         @nexprs $N i -> begin
             fdx_i = floor(I[i])

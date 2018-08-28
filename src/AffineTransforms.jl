@@ -33,7 +33,7 @@ struct StaticUnitMatrix{N} <: StaticArray{Tuple{N,N}, Base.Bottom, 2} end
 
 getindex(::StaticZeroVector, ::Int) = false
 getindex(::StaticUnitMatrix{N}, i::Int) where N = i%(N+1)==1
-getindex(::StaticUnitMatrix{N}, I::Vararg{Union{Colon, Int64}}) where N = SMatrix{N, N, Bool}(I)[I...]
+getindex(::StaticUnitMatrix{N}, i::Vararg{Union{Colon, Int64}}) where N = SMatrix{N, N, Bool}(I)[i...]
 
 (-)(::StaticZeroVector{N}) where N = StaticZeroVector{N}()
 
@@ -41,8 +41,8 @@ getindex(::StaticUnitMatrix{N}, I::Vararg{Union{Colon, Int64}}) where N = SMatri
 (+)(s::StaticVector{N}, ::StaticZeroVector{N}) where N = s
 (+)(::StaticZeroVector{N}, ::StaticZeroVector{N}) where N= StaticZeroVector{N}()
 
-(+)(::StaticZeroVector{N}, s::NTuple{N}) where N= s
-(+)(s::NTuple{N}, ::StaticZeroVector{N}) where N= s
+(+)(::StaticZeroVector{N}, s::NTuple{N}) where N = s
+(+)(s::NTuple{N}, ::StaticZeroVector{N}) where N = s
 
 (*)(::StaticMatrix{M,N}, ::StaticZeroVector{N}) where {M,N} = StaticZeroVector{M}()
 (*)(::SDiagonal{N}, ::StaticZeroVector{N}) where N = StaticZeroVector{N}()
@@ -95,19 +95,22 @@ AffineTransform(::Val{N}, args...) where N = AffineTransform{N}(args...)
 
 ### Application of AffineTransforms
 
-@inline (*)(A::AffineTransform, v::SVector{N}) where N = SVector(A*ntuple(i->v[i], Val{N}))
+@inline (*)(A::AffineTransform, v::SVector{N}) where N = SVector(A*ntuple(i->v[i], Val(N)))
 
 @generated function (*)(A::AffineTransform{N, <:SMatrix}, v::Tuple{Vararg{T, N} where T}) where N
     quote
         $(Expr(:meta, :inline))
+        $(Expr(:meta, :inbounds))
         i_0 = @ntuple $N i -> i<=$N ? A.shift[i] : false
-        $(Expr(:block, (:($(Symbol("i_", j)) = @ntuple $N k -> fma(A.matrix[k,$j], v[$j], $(Symbol("i_",j-1))[k])) for j in 1:N)...))
+        #$(Expr(:block, (:($(Symbol("i_", j)) = @ntuple $N k -> fma(A.matrix[k,$j], v[$j], $(Symbol("i_",j-1))[k])) for j in 1:N)...))
+        $(Expr(:block, (:($(Symbol("i_", j)) = @ntuple $N k -> A.matrix[k,$j]*v[$j]+$(Symbol("i_",j-1))[k]) for j in 1:N)...))
     end
 end
 
 @generated function (*)(A::AffineTransform{N, <:SDiagonal}, v::Tuple{Vararg{T, N} where T}) where N
     quote
         $(Expr(:meta, :inline))
+        $(Expr(:meta, :inbounds))
         @ntuple $N j -> fma(diag(A.matrix)[j], v[j], A.shift[j])
     end
 end
@@ -131,11 +134,11 @@ end
 
 @inline @generated function scale(s::T) where {N, T<:Tuple{Vararg{Union{AbstractRange, Number}, N}}}
     quote
-        AffineTransform(SDiagonal($(Expr(:tuple, ntuple(i->T.parameters[i]<:AbstractRange ? :(step(s[$i])) : :(s[$i]), Val{N})...))), SVector($(Expr(:tuple, ntuple(i->T.parameters[i]<:AbstractRange ? :(first(s[$i])-step(s[$i])) : :(zero($(T.parameters[i]))), Val{N})...))))
+        AffineTransform(SDiagonal($(Expr(:tuple, ntuple(i->T.parameters[i]<:AbstractRange ? :(step(s[$i])) : :(s[$i]), Val(N))...))), SVector($(Expr(:tuple, ntuple(i->T.parameters[i]<:AbstractRange ? :(first(s[$i])-step(s[$i])) : :(zero($(T.parameters[i]))), Val(N))...))))
     end
 end
 
-@inline function unscale(s::Vararg{Range, N}) where N
+@inline function unscale(s::Vararg{AbstractRange, N}) where N
     AffineTransform(SDiagonal(map(inv ∘ step, s)), SVector{N}(map(i -> -first(i)/step(i)+1, [s...])))
 end
 
